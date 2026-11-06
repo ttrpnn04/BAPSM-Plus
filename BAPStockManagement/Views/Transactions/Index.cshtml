@@ -1,0 +1,165 @@
+@model BAPStockManagement.ViewModels.Stock.TransactionIndexViewModel
+@{
+    ViewData["Title"] = "ประวัติรายการสต็อก";
+}
+
+<div class="page-header">
+    <div>
+        <h1>ประวัติรายการสต็อก</h1>
+        <p class="subtitle">แสดงเป็นบิล · กดเข้าไปดูรายการย่อย · ไม่เลือกวันที่ = ย้อนหลัง 30 วัน</p>
+    </div>
+    @if (User.IsInRole("SuperAdmin") || User.IsInRole("Admin"))
+    {
+        <div class="page-actions">
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>บันทึกรายการ
+            </a>
+        </div>
+    }
+</div>
+
+<div class="filter-bar">
+    <form asp-action="Index" method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label">จากวันที่</label>
+            <input type="text" name="fromDate" value="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                   class="form-control js-datepicker" placeholder="เลือกวันที่" autocomplete="off" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">ถึงวันที่</label>
+            <input type="text" name="toDate" value="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                   class="form-control js-datepicker" placeholder="เลือกวันที่" autocomplete="off" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">ประเภท</label>
+            <select name="transactionTypeId" class="form-select">
+                <option value="">ทั้งหมด</option>
+                @foreach (var type in Model.TransactionTypes)
+                {
+                    if (Model.TransactionTypeId == type.TransactionTypeId)
+                    {
+                        <option value="@type.TransactionTypeId" selected>@type.TypeName</option>
+                    }
+                    else
+                    {
+                        <option value="@type.TransactionTypeId">@type.TypeName</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">ค้นหา</label>
+            <input type="search" name="search" value="@Model.Search" class="form-control" placeholder="ร้าน / SKU / สินค้า" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">ต่อหน้า</label>
+            <select name="pageSize" class="form-select">
+                @foreach (var size in new[] { 10, 25, 50 })
+                {
+                    if (Model.PageSize == size)
+                    {
+                        <option value="@size" selected>@size</option>
+                    }
+                    else
+                    {
+                        <option value="@size">@size</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-outline-secondary w-100">กรอง</button>
+        </div>
+    </form>
+</div>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="alert alert-light border">ไม่พบรายการในช่วงที่เลือก</div>
+}
+else
+{
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>วันที่</th>
+                        <th>ประเภท</th>
+                        <th>บิล / ร้าน-ลูกค้า</th>
+                        <th class="text-end">รายการ</th>
+                        <th class="text-end">ชิ้น</th>
+                        <th class="text-end">กระสอบ/ลัง/เส้น</th>
+                        <th>ผู้บันทึก</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var isOut = item.Direction < 0;
+                        <tr>
+                            <td class="text-muted small">@item.TxnDate.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <span class="badge @(isOut ? "bg-danger" : "bg-success")">@item.TypeName</span>
+                            </td>
+                            <td class="fw-medium">
+                                @(string.IsNullOrWhiteSpace(item.RefNo) ? "ไม่ระบุ" : item.RefNo)
+                                @if (!string.IsNullOrWhiteSpace(item.Note))
+                                {
+                                    <div class="small text-muted fw-normal text-truncate" style="max-width: 280px;" title="@item.Note">@item.Note</div>
+                                }
+                            </td>
+                            <td class="text-end">@item.LineCount.ToString("N0")</td>
+                            <td class="text-end fw-semibold @(isOut ? "text-danger" : "text-success")">
+                                @(isOut ? "-" : "+")@item.TotalPieces.ToString("N0")
+                            </td>
+                            <td class="text-end fw-semibold @(isOut ? "text-danger" : "text-success")">
+                                @(isOut ? "-" : "+")@item.TotalCases.ToString("N0")
+                            </td>
+                            <td><span class="text-muted small">@(item.CreatedBy ?? "-")</span></td>
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Details" asp-route-id="@item.DocumentId" class="btn btn-sm btn-outline-primary">
+                                    ดู
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="small text-muted">
+            ทั้งหมด @Model.TotalItems บิล | หน้า @Model.Page / @Model.TotalPages
+        </div>
+        <nav aria-label="pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-fromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                       asp-route-toDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                       asp-route-transactionTypeId="@Model.TransactionTypeId"
+                       asp-route-search="@Model.Search"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-page="@(Model.Page - 1)">ก่อนหน้า</a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">@Model.Page / @Model.TotalPages</span>
+                </li>
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-fromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                       asp-route-toDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                       asp-route-transactionTypeId="@Model.TransactionTypeId"
+                       asp-route-search="@Model.Search"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-page="@(Model.Page + 1)">ถัดไป</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+}

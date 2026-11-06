@@ -1,0 +1,231 @@
+@model BAPStockManagement.ViewModels.Stock.MonthlyReportViewModel
+@{
+    ViewData["Title"] = "รายงานสรุปรายเดือน";
+    var exportFrom = DateTime.Today;
+    var exportTo = exportFrom.AddDays(1);
+}
+
+<div class="page-header">
+    <div>
+        <h1>รายงานสรุปรายเดือน</h1>
+        <p class="subtitle">สรุปการเคลื่อนไหวสต็อก @Model.MonthLabel</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#exportReportModal">
+            <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+        </button>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form asp-action="MonthlyReport" method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label">ปี</label>
+            <input type="number" name="year" value="@Model.Year" class="form-control" min="2020" max="2099" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">เดือน</label>
+            <select name="month" class="form-select">
+                @for (var m = 1; m <= 12; m++)
+                {
+                    if (Model.Month == m)
+                    {
+                        <option value="@m" selected>@m</option>
+                    }
+                    else
+                    {
+                        <option value="@m">@m</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">หมวดหมู่</label>
+            <select name="category" class="form-select">
+                <option value="">ทุกหมวดหมู่</option>
+                @foreach (var cat in Model.Categories)
+                {
+                    if (Model.CategoryFilter == cat)
+                    {
+                        <option value="@cat" selected>@cat</option>
+                    }
+                    else
+                    {
+                        <option value="@cat">@cat</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">ค้นหา</label>
+            <input type="text" name="search" value="@Model.Search" class="form-control"
+                   placeholder="SKU, ชื่อสินค้า, สี/รุ่น" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1"></i>ดูรายงาน</button>
+            <a asp-action="MonthlyReport" class="btn btn-outline-secondary">ล้าง</a>
+        </div>
+    </form>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card stat-success">
+            <div class="d-flex justify-content-between align-items-start w-100">
+                <div>
+                    <div class="stat-label">รับเข้า (@Model.MonthLabel)</div>
+                    <div class="stat-value text-success">+@Model.TotalIn.ToString("N0")</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-arrow-down-circle"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card stat-warning">
+            <div class="d-flex justify-content-between align-items-start w-100">
+                <div>
+                    <div class="stat-label">จ่ายออก (@Model.MonthLabel)</div>
+                    <div class="stat-value text-danger">-@Model.TotalOut.ToString("N0")</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-arrow-up-circle"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card stat-primary">
+            <div class="d-flex justify-content-between align-items-start w-100">
+                <div>
+                    <div class="stat-label">สุทธิ (@Model.MonthLabel)</div>
+                    <div class="stat-value">@Model.TotalNet.ToString("N0")</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-graph-up"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Items.Any())
+{
+    <div class="card-app">
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-bar-chart"></i></div>
+            <p class="mb-0">ไม่มีข้อมูลในเดือน @Model.MonthLabel</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>หมวดหมู่</th>
+                        <th>SKU</th>
+                        <th>ชื่อสินค้า</th>
+                        <th>สี/รุ่น</th>
+                        <th class="text-end">รับเข้า</th>
+                        <th class="text-end">จ่ายออก</th>
+                        <th class="text-end">สุทธิ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td><span class="text-muted small">@item.CategoryName</span></td>
+                            <td><code>@item.Sku</code></td>
+                            <td class="fw-medium">@item.ProductName</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(item.VariantName))
+                                {
+                                    <span class="color-swatch color-swatch--table" data-vname="@item.VariantName" title="@item.VariantName">
+                                        <span class="color-swatch__fill"></span>
+                                        <span class="color-swatch__label">@item.VariantName</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td class="text-end text-success">@(item.QtyIn?.ToString("N0") ?? "0")</td>
+                            <td class="text-end text-danger">@(item.QtyOut?.ToString("N0") ?? "0")</td>
+                            <td class="text-end fw-semibold">@(item.NetChange?.ToString("N0") ?? "0")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="small text-muted">
+            ทั้งหมด @Model.TotalItems รายการ | หน้า @Model.Page / @Model.TotalPages
+        </div>
+        <nav aria-label="pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="MonthlyReport"
+                       asp-route-year="@Model.Year"
+                       asp-route-month="@Model.Month"
+                       asp-route-category="@Model.CategoryFilter"
+                       asp-route-search="@Model.Search"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-page="@(Model.Page - 1)">ก่อนหน้า</a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">@Model.Page / @Model.TotalPages</span>
+                </li>
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="MonthlyReport"
+                       asp-route-year="@Model.Year"
+                       asp-route-month="@Model.Month"
+                       asp-route-category="@Model.CategoryFilter"
+                       asp-route-search="@Model.Search"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-page="@(Model.Page + 1)">ถัดไป</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+}
+
+<div class="modal fade" id="exportReportModal" tabindex="-1" aria-labelledby="exportReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-controller="Transactions" asp-action="ExportDailyReport" method="get">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exportReportModalLabel">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        รับเข้า/ขายออก = รวมทั้งช่วงวันที่ที่เลือก · ยอดคงเหลือ = ยอด ณ สิ้นวันของวันที่สิ้นสุดช่วง
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">จากวันที่</label>
+                        <input type="text" name="fromDate" value="@exportFrom.ToString("yyyy-MM-dd")"
+                               class="form-control js-datepicker" placeholder="เลือกวันที่" autocomplete="off" />
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">ถึงวันที่</label>
+                        <input type="text" name="toDate" value="@exportTo.ToString("yyyy-MM-dd")"
+                               class="form-control js-datepicker" placeholder="เลือกวันที่" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-download me-1"></i>Export
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

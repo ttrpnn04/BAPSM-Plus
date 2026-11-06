@@ -1,0 +1,57 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace BAPStockManagement.ViewModels.Stock;
+
+public class CreateTransactionViewModel
+{
+    [Required(ErrorMessage = "กรุณาเลือกสินค้า")]
+    [Display(Name = "สินค้า")]
+    public int? ProductId { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "กรุณาเลือกสี/รุ่น")]
+    [Display(Name = "สี/รุ่น")]
+    public int VariantId { get; set; }
+
+    [Required(ErrorMessage = "กรุณาเลือกประเภท")]
+    [Display(Name = "ประเภท")]
+    public int TransactionTypeId { get; set; }
+
+    [Required(ErrorMessage = "กรุณาระบุวันที่")]
+    [Display(Name = "วันที่")]
+    [DataType(DataType.Date)]
+    public DateOnly TxnDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+
+    [Range(0, int.MaxValue, ErrorMessage = "จำนวนต้องไม่ติดลบ")]
+    [Display(Name = "จำนวน (ชิ้น)")]
+    public int QtyPieces { get; set; }
+
+    [Range(0, int.MaxValue, ErrorMessage = "จำนวนต้องไม่ติดลบ")]
+    [Display(Name = "จำนวน (กระสอบ/ลัง/เส้น)")]
+    public int QtyCases { get; set; }
+
+    [Required(ErrorMessage = "กรุณากรอกชื่อร้าน / เลขที่อ้างอิง")]
+    [MaxLength(50)]
+    [Display(Name = "ชื่อร้าน / เลขที่อ้างอิง")]
+    public string RefNo { get; set; } = string.Empty;
+
+    [Display(Name = "ลูกค้า / ร้าน")]
+    public int? CustomerId { get; set; }
+
+    [MaxLength(300)]
+    [Display(Name = "หมายเหตุ")]
+    public string? Note { get; set; }
+
+    public List<CreateTransactionLineViewModel> Lines { get; set; } = [];
+}
+
+public class CreateTransactionLineViewModel
+{
+    [Range(1, int.MaxValue, ErrorMessage = "กรุณาเลือกสี/รุ่น")]
+    public int VariantId { get; set; }
+
+    [Range(0, int.MaxValue, ErrorMessage = "จำนวนต้องไม่ติดลบ")]
+    public int QtyPieces { get; set; }
+
+    [Range(0, int.MaxValue, ErrorMessage = "จำนวนต้องไม่ติดลบ")]
+    public int QtyCases { get; set; }
+}

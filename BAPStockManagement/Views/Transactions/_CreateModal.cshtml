@@ -1,0 +1,134 @@
+@model BAPStockManagement.ViewModels.Stock.CreateTransactionViewModel
+
+<form id="createTxnForm" method="post">
+    @Html.AntiForgeryToken()
+
+    <div id="modalAlert" class="alert alert-danger d-none py-2 mb-3" role="alert"></div>
+
+    <div class="mb-3">
+        <label class="form-label fw-medium">สินค้า <span class="text-danger">*</span></label>
+        <input type="search" id="productSearch" class="form-control form-control-sm mb-2"
+               placeholder="ค้นหาสินค้า..." autocomplete="off" />
+        <select name="ProductId" id="productSelect" class="form-select"
+                asp-items="@((IEnumerable<SelectListItem>)ViewBag.Products)">
+            <option value="">-- เลือกสินค้า --</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-medium" id="variantFieldLabel">สี/รุ่น <span class="text-danger">*</span></label>
+        <input type="hidden" name="VariantId" id="variantHidden" value="@Model.VariantId" />
+        <div id="variantChips" class="variant-chip-grid">
+            <span class="text-muted small fst-italic">เลือกสินค้าก่อน</span>
+        </div>
+        <div id="variantData" hidden>
+            @foreach (var v in ViewBag.Variants)
+            {
+                <span data-variant-id="@v.VariantId"
+                      data-product-id="@v.ProductId"
+                      data-sku="@v.Sku"
+                      data-unit="@v.Unit"
+                      data-qty-pieces="@v.QtyPieces"
+                      data-qty-cases="@v.QtyCases"
+                      data-label="@v.Label"></span>
+            }
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-medium">ประเภทรายการ <span class="text-danger">*</span></label>
+        <div class="txn-type-group">
+            @{
+                var transactionTypes = ((IEnumerable<BAPStockManagement.Models.TransactionType>)ViewBag.TransactionTypesList).ToList();
+            }
+            @for (var i = 0; i < transactionTypes.Count; i++)
+            {
+                var type      = transactionTypes[i];
+                var isIn      = type.Direction > 0;
+                var isChecked = Model.TransactionTypeId == type.TransactionTypeId;
+                var sameDirectionIndex = transactionTypes.Take(i).Count(t => t.Direction == type.Direction);
+                var typeLabel = isIn
+                    ? (sameDirectionIndex == 0 ? "รับสต็อกเข้า" : "ปรับยอดเพิ่ม")
+                    : (sameDirectionIndex == 0 ? "ขายออก" : "ปรับยอดลง");
+                <label class="txn-type-pill @(isIn ? "txn-type-pill--in" : "txn-type-pill--out") @(isChecked ? "is-checked" : "")">
+                    <input type="radio" name="TransactionTypeId" value="@type.TransactionTypeId"
+                           data-direction="@type.Direction" @(isChecked ? "checked" : "") />
+                    <i class="bi @(isIn ? "bi-arrow-down-circle" : "bi-arrow-up-circle")"></i>
+                    @typeLabel
+                </label>
+            }
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-medium">วันที่ <span class="text-danger">*</span></label>
+        <input type="text" name="TxnDate" class="form-control js-datepicker"
+               value="@Model.TxnDate.ToString("yyyy-MM-dd")"
+               placeholder="เลือกวันที่" autocomplete="off" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-medium" id="qtyFieldLabel">จำนวน</label>
+        <input type="text" id="QtyValue" class="form-control qty-input" inputmode="numeric"
+               autocomplete="off" placeholder="กรอกจำนวน"
+               value="@(Model.QtyPieces > 0 ? Model.QtyPieces.ToString() : (Model.QtyCases > 0 ? Model.QtyCases.ToString() : null))" />
+        <input type="hidden" name="QtyPieces" value="@(Model.QtyPieces > 0 ? Model.QtyPieces.ToString() : "0")" />
+        <input type="hidden" name="QtyCases" value="@(Model.QtyCases > 0 ? Model.QtyCases.ToString() : "0")" />
+        <div class="form-text" id="qtyFieldHint">ระบบจะแยกเป็นชิ้น หรือ กระสอบ/ลัง/เส้น ให้อัตโนมัติตามสินค้าที่เลือก</div>
+    </div>
+
+    <div class="mb-3">
+        <button type="button" class="btn btn-outline-primary btn-sm" id="addTxnLineBtn">
+            <i class="bi bi-plus-circle me-1"></i>เพิ่มรายการ
+        </button>
+        <div class="form-text">กด Enter เพื่อเพิ่มรายการ แล้วกดบันทึกเมื่อเสร็จ</div>
+    </div>
+
+    <div class="table-responsive mb-3 d-none" id="txnLinesWrap">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>รหัสสินค้า</th>
+                    <th>สี/หน่วย</th>
+                    <th class="text-end">จำนวน</th>
+                    <th class="text-end"></th>
+                </tr>
+            </thead>
+            <tbody id="txnLinesBody"></tbody>
+        </table>
+        <div id="txnLinesInputs"></div>
+    </div>
+
+    <div class="mb-3" id="customerPickerWrap">
+        <label class="form-label">ลูกค้า / ร้าน <span class="text-danger">*</span></label>
+        <input type="search" id="customerFilter" class="form-control form-control-sm mb-2"
+               placeholder="ค้นหาชื่อร้าน..." autocomplete="off" />
+        <select name="CustomerId" id="customerSelect" class="form-select"
+                asp-items="@((IEnumerable<SelectListItem>)ViewBag.Customers)">
+            <option value="">-- เลือกร้าน --</option>
+        </select>
+        <div class="form-text">ขายออก: เลือกร้านแล้วระบบสร้างบิลขายให้อัตโนมัติ</div>
+        <input type="hidden" name="RefNo" id="txnRefNo" value="@Model.RefNo" />
+    </div>
+
+    <div class="mb-3 d-none" id="refNoWrap">
+        <label class="form-label">ชื่อร้าน / เลขที่อ้างอิง <span class="text-danger">*</span></label>
+        <input type="text" id="txnRefNoText" class="form-control" value="@Model.RefNo"
+               placeholder="เช่น ร้าน A, PO-001" maxlength="50" />
+        <div class="invalid-feedback">กรุณากรอกชื่อร้าน / เลขที่อ้างอิง</div>
+    </div>
+
+    <input type="hidden" id="saleOutTypeId" value="@ViewBag.SaleOutTypeId" />
+
+    <div class="mb-4">
+        <label class="form-label">หมายเหตุ</label>
+        <textarea name="Note" class="form-control" rows="2" maxlength="300">@Model.Note</textarea>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-primary" id="modalSubmitBtn">
+            <i class="bi bi-check-lg me-1"></i>บันทึก
+        </button>
+    </div>
+</form>

@@ -1,0 +1,274 @@
+using BAPStockManagement.Constants;
+using BAPStockManagement.Models;
+using BAPStockManagement.ViewModels.Stock;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace BAPStockManagement.Controllers;
+
+[Authorize(Roles = AppRoles.StockView)]
+public class StockController : Controller
+{
+    private readonly BAPStockContext _context;
+
+    public StockController(BAPStockContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IActionResult> Index(string? category, string? search, int page = 1, int pageSize = 20)
+    {
+        var allowedPageSizes = new[] { 10, 20, 50 };
+        if (!allowedPageSizes.Contains(pageSize))
+        {
+            pageSize = 20;
+        }
+
+        if (page < 1)
+        {
+            page = 1;
+        }
+
+        var categories = await _context.Categories
+            .AsNoTracking()
+            .Where(c => c.IsActive)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.CategoryName)
+            .Select(c => c.CategoryName)
+            .ToListAsync();
+
+        var productQuery = _context.Products
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Include(p => p.ProductVariants)
+                .ThenInclude(v => v.StockBalance)
+            .Where(p => p.IsActive && p.Category.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            productQuery = productQuery.Where(p => p.Category.CategoryName == category);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            productQuery = productQuery.Where(p =>
+                p.Sku.Contains(term) ||
+                p.ProductName.Contains(term) ||
+                p.ProductVariants.Any(v => v.VariantName.Contains(term)));
+        }
+
+        var products = await productQuery
+            .OrderBy(p => p.Category.SortOrder)
+            .ThenBy(p => p.Category.CategoryName)
+            .ThenBy(p => p.ProductName)
+            .ToListAsync();
+
+        var items = products
+            .Select(p =>
+            {
+                var activeVariants = p.ProductVariants
+                    .Where(v => v.IsActive)
+                    .Select(v => new StockColorRowViewModel
+                    {
+                        VariantId = v.VariantId,
+                        VariantName = v.VariantName,
+                        QtyPieces = v.StockBalance?.QtyPieces ?? 0,
+                        QtyCases = v.StockBalance?.QtyCases ?? 0
+                    })
+                    .OrderBy(v =>
+                    {
+                        var idx = Array.IndexOf(ProductVariantDefaults.ColorNames, v.VariantName);
+                        return idx >= 0 ? idx : 999;
+                    })
+                    .ThenBy(v => v.VariantName)
+                    .ToList();
+
+                return new StockProductRowViewModel
+                {
+                    ProductId = p.ProductId,
+                    CategoryName = p.Category.CategoryName,
+                    Sku = p.Sku,
+                    ProductName = p.ProductName,
+                    Unit = p.Unit,
+                    QtyPieces = activeVariants.Sum(v => v.QtyPieces),
+                    QtyCases = activeVariants.Sum(v => v.QtyCases),
+                    LastUpdated = p.ProductVariants
+                        .Where(v => v.IsActive && v.StockBalance != null)
+                        .Select(v => (DateTime?)v.StockBalance!.LastUpdated)
+                        .Max(),
+                    PrimaryVariantId = activeVariants.FirstOrDefault()?.VariantId,
+                    Colors = activeVariants
+                };
+            })
+            .OrderBy(i => i.QtyPieces == 0 && i.QtyCases == 0 ? 1 : 0)
+            .ThenBy(i => i.CategoryName)
+            .ThenBy(i => i.ProductName)
+            .ToList();
+
+        var totalItems = items.Count;
+        var totalVariants = items.Sum(i => i.Colors.Count);
+        var totalPieces = items.Sum(i => i.QtyPieces);
+        var totalCases = items.Sum(i => i.QtyCases);
+        var outOfStockCount = items.Count(i => StockThresholds.IsOutOfStock(i.QtyPieces, i.QtyCases));
+        var lowStockCount = items.Count(i => StockThresholds.IsLowStock(i.QtyPieces, i.QtyCases));
+
+        var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling((double)totalItems / pageSize);
+        if (page > totalPages)
+        {
+            page = totalPages;
+        }
+
+        var pagedItems = items
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return View(new StockIndexViewModel
+        {
+            CategoryFilter = category,
+            Search = search,
+            Categories = categories,
+            Items = pagedItems,
+            TotalVariants = totalVariants,
+            TotalPieces = totalPieces,
+            TotalCases = totalCases,
+            OutOfStockCount = outOfStockCount,
+            LowStockCount = lowStockCount,
+            Page = page,
+            PageSize = pageSize,
+            TotalItems = totalItems
+        });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AlertItems(string alertType)
+    {
+        var products = await _context.Products
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Include(p => p.ProductVariants)
+                .ThenInclude(v => v.StockBalance)
+            .Where(p => p.IsActive && p.Category.IsActive)
+            .OrderBy(p => p.Category.SortOrder)
+            .ThenBy(p => p.Category.CategoryName)
+            .ThenBy(p => p.ProductName)
+            .ToListAsync();
+
+        var rows = products
+            .Select(p =>
+            {
+                var variants = p.ProductVariants
+                    .Where(v => v.IsActive)
+                    .Select(v => new
+                    {
+                        variantName = v.VariantName,
+                        qtyPieces   = v.StockBalance?.QtyPieces ?? 0,
+                        qtyCases    = v.StockBalance?.QtyCases  ?? 0
+                    })
+                    .OrderByDescending(v => v.qtyPieces)
+                    .ThenByDescending(v => v.qtyCases)
+                    .ThenBy(v => v.variantName)
+                    .ToList();
+
+                return new
+                {
+                    sku          = p.Sku,
+                    productName  = p.ProductName,
+                    categoryName = p.Category.CategoryName,
+                    unit         = p.Unit,
+                    qtyPieces    = variants.Sum(v => v.qtyPieces),
+                    qtyCases     = variants.Sum(v => v.qtyCases),
+                    colors       = variants
+                };
+            })
+            .Where(r => alertType == "out"
+                ? StockThresholds.IsOutOfStock(r.qtyPieces, r.qtyCases)
+                : StockThresholds.IsLowStock(r.qtyPieces, r.qtyCases))
+            .ToList();
+
+        return Json(rows);
+    }
+
+    public async Task<IActionResult> MonthlyReport(int? year, int? month, string? category, string? search, int page = 1, int pageSize = 25)
+    {
+        var allowedPageSizes = new[] { 10, 25, 50 };
+        if (!allowedPageSizes.Contains(pageSize)) pageSize = 25;
+        if (page < 1) page = 1;
+
+        var today = DateTime.Today;
+        var reportYear = year ?? today.Year;
+        var reportMonth = month ?? today.Month;
+
+        if (reportMonth < 1)
+        {
+            reportMonth = 12;
+            reportYear--;
+        }
+        else if (reportMonth > 12)
+        {
+            reportMonth = 1;
+            reportYear++;
+        }
+
+        var categories = await _context.Categories
+            .Where(c => c.IsActive)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.CategoryName)
+            .Select(c => c.CategoryName)
+            .ToListAsync();
+
+        var query = _context.VwMonthlySummaries
+            .Where(s => s.TxnYear == reportYear && s.TxnMonth == reportMonth);
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            query = query.Where(s => s.CategoryName == category);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(s =>
+                s.Sku.Contains(term) ||
+                s.ProductName.Contains(term) ||
+                s.VariantName.Contains(term));
+        }
+
+        var allItems = await query
+            .OrderBy(s => s.CategoryName)
+            .ThenBy(s => s.ProductName)
+            .ThenBy(s => s.VariantName)
+            .ToListAsync();
+
+        var totalIn  = allItems.Sum(i => i.QtyIn  ?? 0);
+        var totalOut = allItems.Sum(i => i.QtyOut ?? 0);
+        var totalNet = allItems.Sum(i => i.NetChange ?? 0);
+        var totalItems = allItems.Count;
+
+        var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling((double)totalItems / pageSize);
+        if (page > totalPages) page = totalPages;
+
+        var pagedItems = allItems
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return View(new MonthlyReportViewModel
+        {
+            Year = reportYear,
+            Month = reportMonth,
+            CategoryFilter = category,
+            Search = search,
+            Categories = categories,
+            Items = pagedItems,
+            TotalIn = totalIn,
+            TotalOut = totalOut,
+            TotalNet = totalNet,
+            TotalItems = totalItems,
+            Page = page,
+            PageSize = pageSize
+        });
+    }
+}

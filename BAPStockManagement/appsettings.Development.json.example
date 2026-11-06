@@ -1,0 +1,13 @@
+{
+  "SeedSuperAdmin": {
+    "Email": "superadmin@bap.local",
+    "Password": "CHANGE_ME_StrongPass1",
+    "DisplayName": "ผู้ดูแลระบบ"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
