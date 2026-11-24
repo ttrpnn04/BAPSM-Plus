@@ -1,0 +1,41 @@
+@using System.Globalization
+@model BAPStockManagement.ViewModels.Dashboard.DashboardPageViewModel
+@{
+    var numberFormat = CultureInfo.InvariantCulture;
+}
+<section class="dashboard-card dashboard-widget dashboard-widget--half"
+         aria-labelledby="top-products-title">
+    <header class="dashboard-card-header">
+        <div>
+            <h2 id="top-products-title">Top 5 สินค้าที่มีการใช้มากที่สุด</h2>
+            <p>ยอดใช้สินค้าในช่วง 30 วันที่ผ่านมา</p>
+        </div>
+        <button type="button" class="dashboard-icon-button" aria-label="ตัวเลือกสินค้ายอดนิยม">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" />
+            </svg>
+        </button>
+    </header>
+    <div class="top-products-table" role="table" aria-label="สินค้าที่มีการใช้มากที่สุด">
+        <div class="top-products-header" role="row">
+            <span role="columnheader">#</span>
+            <span role="columnheader">สินค้า</span>
+            <span role="columnheader">ยอดใช้ (30 วัน)</span>
+            <span role="columnheader">แนวโน้ม</span>
+        </div>
+        @for (var index = 0; index < Model.Summary.TopProducts.Count; index++)
+        {
+            var product = Model.Summary.TopProducts[index];
+            <div class="top-products-row" role="row">
+                <span class="top-products-rank" role="cell">@((index + 1).ToString("00"))</span>
+                <strong role="cell">@product.ProductName</strong>
+                <span class="top-products-usage" role="cell">@product.Usage30Days.ToString("N0", numberFormat)</span>
+                <span class="top-products-trend" role="cell">
+                    <canvas class="sparkline" data-sparkline-index="@index"
+                            role="img" aria-label="แนวโน้ม @product.ProductName เพิ่มขึ้น @product.ChangePercent เปอร์เซ็นต์"></canvas>
+                    <b>▲ @product.ChangePercent%</b>
+                </span>
+            </div>
+        }
+    </div>
+</section>

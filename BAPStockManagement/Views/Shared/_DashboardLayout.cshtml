@@ -1,0 +1,27 @@
+@model BAPStockManagement.ViewModels.Dashboard.DashboardPageViewModel
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - StockAI</title>
+    <link rel="preload" href="~/fonts/NotoSansThai/noto-sans-thai-thai-400-normal.woff2"
+          as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+</head>
+<body class="sai-dashboard">
+    <div class="dashboard-shell">
+        @await Html.PartialAsync("Dashboard/_Sidebar", Model)
+        <button type="button" class="dashboard-drawer-scrim" data-sidebar-close
+                aria-label="ปิดเมนู" hidden></button>
+        <div class="dashboard-main">
+            @await Html.PartialAsync("Dashboard/_TopBar", Model)
+            <main class="dashboard-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+    <script src="~/lib/chartjs/chart.umd.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

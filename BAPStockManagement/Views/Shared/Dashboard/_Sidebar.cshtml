@@ -1,0 +1,70 @@
+@model BAPStockManagement.ViewModels.Dashboard.DashboardPageViewModel
+<aside class="dashboard-sidebar" aria-label="เมนูหลัก">
+    <div class="dashboard-sidebar-head">
+    <a class="dashboard-brand" href="/Dashboard">
+        <svg class="dashboard-brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+            <path d="m20 3 15 8.5v17L20 37 5 28.5v-17L20 3Z" />
+            <path d="m5 11.5 15 9 15-9M20 20.5V37" />
+        </svg>
+        <span>
+            <strong>StockAI</strong>
+            <small>Smarter Inventory / Better Tomorrow</small>
+        </span>
+    </a>
+    <button type="button" class="dashboard-sidebar-close" data-sidebar-close
+            aria-label="ปิดเมนู">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m6 6 12 12M18 6 6 18" />
+        </svg>
+    </button>
+    </div>
+    <nav class="dashboard-nav">
+        <a class="dashboard-nav-link is-active" href="/Dashboard" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" />
+            </svg>
+            <span>หน้าแรก</span>
+        </a>
+        <a class="dashboard-nav-link" href="/Products/Index">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m12 3 9 5-9 5-9-5 9-5Z" />
+                <path d="m3 12 9 5 9-5M3 16l9 5 9-5" />
+            </svg>
+            <span>สินค้า</span>
+        </a>
+        <a class="dashboard-nav-link" href="/Stock/Index">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m3 7 9-4 9 4v10l-9 4-9-4V7Z" />
+                <path d="m3 7 9 4 9-4M12 11v10" />
+            </svg>
+            <span>คลังสินค้า</span>
+        </a>
+        <span class="dashboard-nav-link is-disabled" aria-disabled="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 4h18l-2 12H5L3 4Z" />
+                <path d="M3 4 2 2M8 20h.01M17 20h.01" />
+            </svg>
+            <span>สั่งซื้อ <small>PR/PO</small></span>
+        </span>
+        <span class="dashboard-nav-link is-disabled" aria-disabled="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 21h18M5 21V7l7-4 7 4v14M9 10h.01M15 10h.01M9 14h.01M15 14h.01M10 21v-4h4v4" />
+            </svg>
+            <span>ผู้จำหน่าย</span>
+        </span>
+        <a class="dashboard-nav-link" href="/Stock/MonthlyReport">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 19V5M4 19h17M8 16v-5M13 16V7M18 16V4" />
+            </svg>
+            <span>รายงาน</span>
+        </a>
+        <span class="dashboard-nav-link is-disabled" aria-disabled="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+                <path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.8 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.8-1l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.8-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.8 1l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1 0 2Z" />
+            </svg>
+            <span>ตั้งค่า</span>
+        </span>
+    </nav>
+    @await Html.PartialAsync("Dashboard/_Mascot", Model)
+</aside>

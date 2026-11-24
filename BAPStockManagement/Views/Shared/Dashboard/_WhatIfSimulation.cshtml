@@ -1,0 +1,79 @@
+@using System.Globalization
+@model BAPStockManagement.ViewModels.Dashboard.DashboardPageViewModel
+@{
+    var simulation = Model.Summary.WhatIf;
+    var numberFormat = CultureInfo.InvariantCulture;
+}
+<section class="dashboard-card dashboard-widget dashboard-widget--half dashboard-simulation"
+         aria-labelledby="simulation-title" data-sku="@simulation.Sku">
+    <header class="dashboard-card-header">
+        <div class="dashboard-section-title">
+            <span class="simulation-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h17M8 16v-5M13 16V7M18 16V4" /></svg>
+            </span>
+            <div>
+                <h2 id="simulation-title">What-if Simulation</h2>
+                <p>ลองปรับจำนวนที่สั่งเพื่อดูผลลัพธ์</p>
+            </div>
+        </div>
+        <span class="simulation-tag">ทดลอง</span>
+    </header>
+
+    <div class="simulation-product">
+        <span class="simulation-product-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m3 8 9-5 9 5-9 5-9-5Z" /><path d="M3 12l9 5 9-5M3 16l9 5 9-5" /></svg>
+        </span>
+        <span>
+            <strong>@simulation.ProductName</strong>
+            <small>@simulation.Sku</small>
+        </span>
+    </div>
+
+    <div class="simulation-slider-label">
+        <label for="order-quantity">จำนวนที่ต้องการสั่ง</label>
+        <output id="order-quantity-output" for="order-quantity">
+            @simulation.OrderQuantity.ToString("N0", numberFormat) ชิ้น
+        </output>
+    </div>
+    <input id="order-quantity" class="simulation-slider" type="range"
+           min="@simulation.MinimumOrderQuantity"
+           max="@simulation.MaximumOrderQuantity"
+           step="@simulation.OrderQuantityStep"
+           value="@simulation.OrderQuantity"
+           aria-valuetext="@simulation.OrderQuantity.ToString("N0", numberFormat) ชิ้น" />
+    <div class="simulation-ticks" aria-hidden="true">
+        @foreach (var tick in simulation.QuantityTicks)
+        {
+            var tickPosition = (tick - simulation.MinimumOrderQuantity) * 100d
+                / (simulation.MaximumOrderQuantity - simulation.MinimumOrderQuantity);
+            <span style="left: @tickPosition.ToString("0.##", numberFormat)%">
+                @tick.ToString("N0", numberFormat)
+            </span>
+        }
+    </div>
+
+    <div class="simulation-results" aria-live="polite">
+        <article class="simulation-result simulation-result--risk">
+            <span>โอกาสขาดสต็อก</span>
+            <strong data-simulation-risk>@simulation.StockoutRiskPercent.ToString("0.#", numberFormat)%</strong>
+        </article>
+        <article class="simulation-result">
+            <span>ต้นทุนการสั่งซื้อ</span>
+            <strong data-simulation-order-cost>฿@simulation.OrderCost.Amount.ToString("N0", numberFormat)</strong>
+        </article>
+        <article class="simulation-result">
+            <span>ต้นทุนการเก็บสินค้า</span>
+            <strong data-simulation-holding-cost>฿@simulation.HoldingCost.Amount.ToString("N0", numberFormat)</strong>
+        </article>
+        <article class="simulation-result simulation-result--coverage">
+            <span>คาดว่าจะเพียงพอ</span>
+            <strong data-simulation-coverage>@simulation.CoverageDays วัน</strong>
+        </article>
+    </div>
+    <button type="button" class="dashboard-text-link simulation-link"
+            data-simulation-submit>
+        <span data-simulation-label>ลองจำลอง</span> <span aria-hidden="true">→</span>
+    </button>
+    <p class="dashboard-action-status" role="status" aria-live="polite"
+       data-simulation-status></p>
+</section>

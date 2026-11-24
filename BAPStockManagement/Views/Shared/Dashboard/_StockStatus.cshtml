@@ -1,0 +1,54 @@
+@using System.Globalization
+@model BAPStockManagement.ViewModels.Dashboard.DashboardPageViewModel
+@{
+    var numberFormat = CultureInfo.InvariantCulture;
+    var statusLabels = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["NORMAL"] = "ปกติ",
+        ["LOW_STOCK"] = "ใกล้หมด",
+        ["OUT_OF_STOCK"] = "หมดสต็อก",
+        ["OVERSTOCK"] = "เกินสต็อก"
+    };
+    var statusClasses = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["NORMAL"] = "normal",
+        ["LOW_STOCK"] = "low",
+        ["OUT_OF_STOCK"] = "out",
+        ["OVERSTOCK"] = "over"
+    };
+}
+<section class="dashboard-card dashboard-widget" aria-labelledby="stock-status-title">
+    <header class="dashboard-card-header">
+        <div>
+            <h2 id="stock-status-title">สัดส่วนสถานะสินค้า</h2>
+            <p>ภาพรวมสินค้าคงคลัง</p>
+        </div>
+        <button type="button" class="dashboard-icon-button" aria-label="ตัวเลือกสถานะสินค้า">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" />
+            </svg>
+        </button>
+    </header>
+    <div class="dashboard-donut-container">
+        <canvas id="stock-status-chart" role="img" aria-label="กราฟโดนัทแสดงสัดส่วนสถานะสินค้า"></canvas>
+    </div>
+    <ul class="dashboard-status-list">
+        @foreach (var status in Model.Summary.StockStatus)
+        {
+            var label = statusLabels.TryGetValue(status.Status, out var translatedLabel)
+                ? translatedLabel
+                : status.Status;
+            var statusClass = statusClasses.TryGetValue(status.Status, out var className)
+                ? className
+                : "normal";
+            <li>
+                <span class="dashboard-status-name">
+                    <i class="status-dot status-dot--@statusClass" aria-hidden="true"></i>
+                    @label
+                </span>
+                <span class="dashboard-status-count">@status.Count.ToString("N0", numberFormat)</span>
+                <strong>@status.Percentage%</strong>
+            </li>
+        }
+    </ul>
+</section>

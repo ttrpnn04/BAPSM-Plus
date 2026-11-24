@@ -1,0 +1,58 @@
+@using System.Globalization
+@model BAPStockManagement.ViewModels.Dashboard.DashboardPageViewModel
+@{
+    var kpis = Model.Summary.Kpis;
+    var numberFormat = CultureInfo.InvariantCulture;
+}
+
+<section class="dashboard-kpis" aria-label="ตัวชี้วัดคลังสินค้า">
+    <article class="dashboard-card dashboard-kpi-card">
+        <div class="dashboard-kpi-heading">
+            <span>สินค้าทั้งหมด</span>
+            <span class="dashboard-kpi-icon dashboard-kpi-icon--blue" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5" /></svg>
+            </span>
+        </div>
+        <strong class="dashboard-kpi-value">@kpis.TotalProducts.ToString("N0", numberFormat) <small>รายการ</small></strong>
+        <span class="dashboard-kpi-change dashboard-kpi-change--positive">
+            <span aria-hidden="true">▲</span> @kpis.ProductCountChangePercent% <span class="dashboard-kpi-caption">จากเดือนก่อน</span>
+        </span>
+    </article>
+
+    <article class="dashboard-card dashboard-kpi-card">
+        <div class="dashboard-kpi-heading">
+            <span>มูลค่าสินค้าในคลัง</span>
+            <span class="dashboard-kpi-icon dashboard-kpi-icon--purple" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 2v20M17 6.5c0-1.7-2.2-3-5-3s-5 1.3-5 3 1.8 2.7 5 3.5 5 1.8 5 3.5-2.2 3-5 3-5-1.3-5-3" /></svg>
+            </span>
+        </div>
+        <strong class="dashboard-kpi-value">฿@kpis.InventoryValue.Amount.ToString("N0", numberFormat)</strong>
+        <span class="dashboard-kpi-change dashboard-kpi-change--positive">
+            <span aria-hidden="true">▲</span> @kpis.InventoryValueChangePercent% <span class="dashboard-kpi-caption">จากเดือนก่อน</span>
+        </span>
+    </article>
+
+    <article class="dashboard-card dashboard-kpi-card">
+        <div class="dashboard-kpi-heading">
+            <span>สินค้าใกล้หมด</span>
+            <span class="dashboard-kpi-icon dashboard-kpi-icon--red" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z" /><path d="M12 9v5m0 3h.01" /></svg>
+            </span>
+        </div>
+        <strong class="dashboard-kpi-value">@kpis.LowStockProducts.ToString("N0", numberFormat) <small>รายการ</small></strong>
+        <span class="dashboard-kpi-change dashboard-kpi-change--negative">
+            <span aria-hidden="true">▲</span> @kpis.LowStockChange <span class="dashboard-kpi-caption">รายการจากเดือนก่อน</span>
+        </span>
+    </article>
+
+    <article class="dashboard-card dashboard-kpi-card">
+        <div class="dashboard-kpi-heading">
+            <span>รายการที่ควรสั่ง</span>
+            <span class="dashboard-kpi-icon dashboard-kpi-icon--amber" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 11h10.9l2-8H6" /><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /></svg>
+            </span>
+        </div>
+        <strong class="dashboard-kpi-value">@kpis.RecommendedReorders.ToString("N0", numberFormat) <small>รายการ</small></strong>
+        <button type="button" class="dashboard-text-link">ดูทั้งหมด <span aria-hidden="true">→</span></button>
+    </article>
+</section>

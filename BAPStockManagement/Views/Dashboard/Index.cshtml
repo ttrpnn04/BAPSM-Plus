@@ -1,0 +1,57 @@
+@using System.Text.Json
+@model BAPStockManagement.ViewModels.Dashboard.DashboardPageViewModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "StockAI";
+    var dashboardJson = JsonSerializer.Serialize(
+        Model.Summary,
+        new JsonSerializerOptions(JsonSerializerDefaults.Web));
+}
+
+<section class="dashboard-page" aria-labelledby="dashboard-title">
+    @if (ViewData["DashboardPreview"] is true)
+    {
+        <p class="dashboard-preview-notice" role="status">
+            โหมดแสดงตัวอย่างสำหรับ Development — ใช้ข้อมูลจำลองและไม่เชื่อมต่อฐานข้อมูล
+        </p>
+    }
+    <header class="dashboard-page-header">
+        <div>
+            <h1 id="dashboard-title">สวัสดีครับ @Model.DisplayName 👋</h1>
+            <p>นี่คือภาพรวมคลังสินค้าของคุณวันนี้</p>
+        </div>
+        <div class="dashboard-page-actions">
+            <time datetime="@Model.ReportDate.ToString("yyyy-MM-dd")">
+                @Model.ReportDateLabel
+            </time>
+            <button type="button" class="dashboard-button dashboard-button--primary"
+                    data-purchase-request>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span data-purchase-request-label>สร้างใบขอสั่งซื้ออัตโนมัติ</span>
+            </button>
+            <p class="dashboard-action-status" role="status" aria-live="polite"
+               data-purchase-request-status></p>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        @await Html.PartialAsync("Dashboard/_KpiCards", Model)
+        @await Html.PartialAsync("Dashboard/_Forecast", Model)
+        @await Html.PartialAsync("Dashboard/_StockStatus", Model)
+        @await Html.PartialAsync("Dashboard/_UrgentItems", Model)
+        @await Html.PartialAsync("Dashboard/_AiInsights", Model)
+        @await Html.PartialAsync("Dashboard/_TopProducts", Model)
+        @await Html.PartialAsync("Dashboard/_WhatIfSimulation", Model)
+    </div>
+</section>
+
+<script id="dashboard-data" type="application/json">@Html.Raw(dashboardJson)</script>
+<div id="antiforgery-token" hidden>
+    @Html.AntiForgeryToken()
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/dashboard/index.js" asp-append-version="true"></script>
+}

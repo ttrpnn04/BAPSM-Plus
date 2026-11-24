@@ -1,0 +1,24 @@
+@model BAPStockManagement.ViewModels.Dashboard.DashboardPageViewModel
+<section class="dashboard-card dashboard-widget dashboard-widget--wide" aria-labelledby="forecast-title">
+    <header class="dashboard-card-header">
+        <div>
+            <h2 id="forecast-title">แนวโน้มการใช้สินค้า <span>(Forecast)</span></h2>
+            <p>วิเคราะห์ยอดใช้จริงและคาดการณ์การใช้สินค้า</p>
+        </div>
+        <label class="visually-hidden" for="forecast-horizon">ระยะเวลาคาดการณ์</label>
+        <select id="forecast-horizon" class="dashboard-select">
+            <option value="3">3 เดือนข้างหน้า</option>
+            <option value="6" selected>6 เดือนข้างหน้า</option>
+            <option value="12">12 เดือนข้างหน้า</option>
+        </select>
+    </header>
+    <div class="dashboard-chart-legend" aria-label="คำอธิบายกราฟ">
+        <span><i class="legend-swatch legend-swatch--actual"></i>ยอดใช้จริง</span>
+        <span><i class="legend-swatch legend-swatch--forecast"></i>คาดการณ์ (AI)</span>
+        <span><i class="legend-swatch legend-swatch--confidence"></i>ช่วงความเชื่อมั่น</span>
+    </div>
+    <div class="dashboard-chart-container">
+        <canvas id="forecast-chart" role="img"
+                aria-label="กราฟแนวโน้มการใช้สินค้า ตั้งแต่เดือนมกราคมถึงธันวาคม"></canvas>
+    </div>
+</section>

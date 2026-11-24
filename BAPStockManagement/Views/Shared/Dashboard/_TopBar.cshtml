@@ -1,0 +1,56 @@
+@model BAPStockManagement.ViewModels.Dashboard.DashboardPageViewModel
+@{
+    var displayName = string.IsNullOrWhiteSpace(Model.DisplayName) ? "Kunakorn K." : Model.DisplayName;
+    var department = string.IsNullOrWhiteSpace(Model.Department) ? "IT Department" : Model.Department;
+    var initial = displayName[..1].ToUpperInvariant();
+    var notificationCount = Model.Summary.UnreadNotificationCount;
+}
+
+<header class="dashboard-topbar" aria-label="แถบเครื่องมือ">
+    <button type="button" class="dashboard-menu-toggle" data-sidebar-toggle
+            aria-label="เปิดเมนู" aria-controls="dashboard-sidebar" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
+    <div class="dashboard-search-container" data-product-search>
+        <label class="dashboard-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10.8" cy="10.8" r="6.8" />
+                <path d="m16 16 4 4" />
+            </svg>
+            <span class="visually-hidden">ค้นหาสินค้าหรือรหัสสินค้า</span>
+            <input type="search" placeholder="ค้นหาสินค้าหรือรหัสสินค้า..."
+                   role="combobox" aria-autocomplete="list" aria-expanded="false"
+                   aria-controls="product-search-results"
+                   data-product-search-input autocomplete="off" maxlength="100" />
+            <kbd>⌘ K</kbd>
+        </label>
+        <div id="product-search-results" class="dashboard-search-results"
+             role="listbox" aria-label="ผลการค้นหาสินค้า" data-product-search-results hidden></div>
+        <p class="dashboard-search-status" aria-live="polite" aria-atomic="true"
+           data-product-search-status></p>
+    </div>
+    <button type="button" class="dashboard-notifications"
+            aria-label="การแจ้งเตือน @notificationCount รายการ">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+            <path d="M10 21h4" />
+        </svg>
+        @if (notificationCount > 0)
+        {
+            <span class="notification-badge">@notificationCount</span>
+        }
+    </button>
+    <span class="dashboard-topbar-divider" aria-hidden="true"></span>
+    <div class="dashboard-user">
+        <span class="dashboard-avatar" aria-hidden="true">@initial</span>
+        <span class="dashboard-user-copy">
+            <strong>@displayName</strong>
+            <small>@department</small>
+        </span>
+        <svg class="dashboard-user-chevron" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m7 10 5 5 5-5" />
+        </svg>
+    </div>
+</header>

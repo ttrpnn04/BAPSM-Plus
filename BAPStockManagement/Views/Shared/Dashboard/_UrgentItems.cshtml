@@ -1,0 +1,53 @@
+@using System.Globalization
+@model BAPStockManagement.ViewModels.Dashboard.DashboardPageViewModel
+@{
+    var numberFormat = CultureInfo.InvariantCulture;
+}
+<section class="dashboard-card dashboard-widget dashboard-widget--wide dashboard-urgent"
+         aria-labelledby="urgent-title">
+    <header class="dashboard-card-header">
+        <div class="dashboard-section-title">
+            <span class="dashboard-section-title-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z" /><path d="M12 9v5m0 3h.01" /></svg>
+            </span>
+            <div>
+                <h2 id="urgent-title">สินค้าที่ต้องดำเนินการด่วน</h2>
+                <p>รายการสินค้าที่ควรวางแผนสั่งซื้อ</p>
+            </div>
+        </div>
+        <button type="button" class="dashboard-text-link">ดูทั้งหมด <span aria-hidden="true">→</span></button>
+    </header>
+    <div class="urgent-table" role="table" aria-label="สินค้าที่ต้องดำเนินการด่วน">
+        <div class="urgent-table-header" role="row">
+            <span role="columnheader">สินค้า</span>
+            <span role="columnheader">ความเสี่ยง</span>
+            <span role="columnheader">คงเหลือ / แนะนำสั่ง</span>
+            <span role="columnheader"><span class="visually-hidden">รายละเอียด</span></span>
+        </div>
+        @foreach (var item in Model.Summary.UrgentItems)
+        {
+            var initials = string.Concat(item.ProductName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Take(2)
+                .Select(word => word[..1]));
+            <div class="urgent-table-row" role="row">
+                <div class="urgent-product" role="cell">
+                    <span class="urgent-product-thumb" aria-hidden="true">@initials</span>
+                    <span class="urgent-product-copy">
+                        <strong>@item.ProductName</strong>
+                        <small>@item.Sku</small>
+                    </span>
+                </div>
+                <div role="cell">
+                    <span class="urgent-risk">เสี่ยงหมดใน @item.DaysUntilStockout วัน</span>
+                </div>
+                <div class="urgent-stock" role="cell">
+                    <strong>@item.OnHand.ToString("N0", numberFormat) <small>ชิ้น</small></strong>
+                    <span>แนะนำสั่ง @item.RecommendedOrderQuantity.ToString("N0", numberFormat) ชิ้น</span>
+                </div>
+                <div role="cell">
+                    <button type="button" class="dashboard-button dashboard-button--detail">ดูรายละเอียด</button>
+                </div>
+            </div>
+        }
+    </div>
+</section>
