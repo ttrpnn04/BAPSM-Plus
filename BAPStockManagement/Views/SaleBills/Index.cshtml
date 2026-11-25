@@ -107,10 +107,22 @@
         selectAll?.addEventListener('change', () => {
             checks().forEach(c => { c.checked = selectAll.checked; });
         });
-        document.getElementById('exportForm')?.addEventListener('submit', (e) => {
+        const exportForm = document.getElementById('exportForm');
+        exportForm?.addEventListener('submit', async (e) => {
             const any = checks().some(c => c.checked);
-            if (!any && !confirm('ไม่ได้เลือกบิล — Export ทุกบิลในช่วงวันที่ที่ค้นหา (สูงสุด 50)?')) {
-                e.preventDefault();
+            if (any || exportForm.dataset.confirmed === 'true') {
+                delete exportForm.dataset.confirmed;
+                return;
+            }
+
+            e.preventDefault();
+            const result = await window.BapAlerts.confirm(
+                'ไม่ได้เลือกบิล — ระบบจะ Export ทุกบิลในช่วงวันที่ค้นหา (สูงสุด 50 รายการ)',
+                { icon: 'info', title: 'ยืนยันการ Export' }
+            );
+            if (result.isConfirmed) {
+                exportForm.dataset.confirmed = 'true';
+                exportForm.requestSubmit();
             }
         });
     })();

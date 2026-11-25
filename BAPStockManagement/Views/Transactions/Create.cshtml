@@ -454,12 +454,12 @@
             const qty = readQty(qtyValueInput);
 
             if (!variantId || !variant) {
-                if (showAlert) alert('กรุณาเลือกสินค้า/หน่วยก่อนเพิ่มรายการ');
+                if (showAlert) window.BapAlerts.error('กรุณาเลือกสินค้า/หน่วยก่อนเพิ่มรายการ');
                 return false;
             }
 
             if (qty === 0) {
-                if (showAlert) alert(isCaseVariant(variant)
+                if (showAlert) window.BapAlerts.error(isCaseVariant(variant)
                     ? 'กรุณาระบุจำนวนกระสอบ/ลัง/เส้นอย่างน้อย 1'
                     : 'กรุณาระบุจำนวนชิ้นอย่างน้อย 1');
                 return false;
@@ -473,7 +473,7 @@
             if (currentDirection() < 0) {
                 if (nextPieces > variant.qtyPieces || nextCases > variant.qtyCases) {
                     if (showAlert) {
-                        alert(isCaseVariant(variant)
+                        window.BapAlerts.error(isCaseVariant(variant)
                             ? `สต็อกไม่เพียงพอ (คงเหลือ ${variant.qtyCases.toLocaleString()} กระสอบ/ลัง/เส้น)`
                             : `สต็อกไม่เพียงพอ (คงเหลือ ${variant.qtyPieces.toLocaleString()} ชิ้น)`);
                     }
@@ -608,7 +608,7 @@
             }
 
             if (txnLines.length === 0) {
-                alert('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ');
+                window.BapAlerts.error('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ');
                 return;
             }
 

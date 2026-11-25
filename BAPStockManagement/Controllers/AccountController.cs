@@ -47,6 +47,7 @@ public class AccountController : Controller
 
         if (result.Succeeded)
         {
+            TempData["Success"] = "เข้าสู่ระบบสำเร็จ";
             return RedirectToLocal(returnUrl);
         }
 

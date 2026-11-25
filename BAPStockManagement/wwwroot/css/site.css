@@ -4523,3 +4523,41 @@ body.login-body {
 .small      { font-size: 0.8rem !important; }
 .fw-medium  { font-weight: 500; }
 .fw-semibold{ font-weight: 600; }
+
+.swal2-container.bap-swal-container {
+  z-index: 20000 !important;
+}
+
+.swal2-popup.bap-swal-popup {
+  border-radius: 1rem;
+  color: var(--text-1);
+  font-family: inherit;
+}
+
+.bap-swal-confirm,
+.bap-swal-cancel {
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0.65rem 1.2rem;
+  font: inherit;
+  font-weight: 600;
+}
+
+.bap-swal-confirm {
+  background: #12233F;
+  color: #fff;
+}
+
+.bap-swal-confirm:hover {
+  background: #0A1830;
+}
+
+.bap-swal-cancel {
+  background: #F2791E;
+  color: #fff;
+  margin-right: 0.5rem;
+}
+
+.bap-swal-cancel:hover {
+  background: #D9660F;
+}

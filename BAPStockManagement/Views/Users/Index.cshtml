@@ -47,7 +47,7 @@
                                 <i class="bi bi-pencil"></i>
                             </a>
                             <form asp-action="Delete" asp-route-id="@user.Id" method="post" class="d-inline"
-                                  onsubmit="return confirm('ยืนยันการลบผู้ใช้ @user.Email?');">
+                                  data-bap-confirm="ยืนยันการลบผู้ใช้ @user.Email หรือไม่?">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash"></i>
@@ -84,19 +84,6 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         (function () {
-            function showToast(msg, type) {
-                const el = document.createElement('div');
-                el.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show shadow-sm`;
-                el.style.cssText = 'position:fixed;top:1.25rem;left:50%;transform:translateX(-50%);z-index:9999;min-width:260px;text-align:center';
-                if (window.BapStockHtml?.setToastMessage) {
-                    window.BapStockHtml.setToastMessage(el, msg, type === 'success' ? 'bi bi-check-circle' : 'bi bi-x-circle');
-                } else {
-                    el.textContent = msg;
-                }
-                document.body.appendChild(el);
-                setTimeout(() => el.remove(), 4000);
-            }
-
             function initUserModalForm() {
                 const form = document.getElementById('createUserForm');
                 const submitBtn = document.getElementById('userModalSubmitBtn');
@@ -118,19 +105,30 @@
                             body: new FormData(form)
                         });
 
-                        if (res.ok) {
+                        const responseText = await res.text();
+                        let data = null;
+                        try { data = JSON.parse(responseText); } catch (_) {}
+
+                        if (res.ok && data?.success === true) {
                             bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
-                            showToast('สร้างผู้ใช้สำเร็จ', 'success');
-                            setTimeout(() => location.reload(), 900);
+                            await window.BapAlerts.success(data.message || 'สร้างผู้ใช้สำเร็จ');
+                            location.reload();
                             return;
                         }
 
-                        document.getElementById('createUserModalBody').innerHTML = await res.text();
-                        initUserModalForm();
+                        const message = data
+                            ? window.BapAlerts.messageFromPayload(data, 'บันทึกข้อมูลไม่สำเร็จ')
+                            : window.BapAlerts.messageFromHtml(responseText, 'บันทึกข้อมูลไม่สำเร็จ');
+                        await window.BapAlerts.error(message);
+                        if (res.status === 400 && responseText) {
+                            document.getElementById('createUserModalBody').innerHTML = responseText;
+                            initUserModalForm();
+                        } else {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>บันทึก';
+                        }
                     } catch {
-                        document.getElementById('createUserModalBody').insertAdjacentHTML(
-                            'afterbegin',
-                            '<div class="alert alert-danger">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>');
+                        await window.BapAlerts.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่');
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>บันทึก';
                     }
@@ -158,9 +156,11 @@
                             initUserModalForm();
                         } else {
                             modalBody.innerHTML = '<div class="alert alert-danger m-2">โหลดฟอร์มไม่สำเร็จ กรุณาลองใหม่</div>';
+                            await window.BapAlerts.errorFromResponse(res, 'โหลดฟอร์มไม่สำเร็จ กรุณาลองใหม่');
                         }
                     } catch {
                         modalBody.innerHTML = '<div class="alert alert-danger m-2">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>';
+                        await window.BapAlerts.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่');
                     }
                 });
             });

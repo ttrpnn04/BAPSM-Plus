@@ -111,12 +111,13 @@ public class UsersController : Controller
         }
 
         await _userManager.AddToRoleAsync(user, model.Role);
-        TempData["Success"] = $"สร้างผู้ใช้ {model.Email} สำเร็จ";
+        var successMessage = $"สร้างผู้ใช้ {model.Email} สำเร็จ";
         if (isAjax)
         {
-            return Ok(new { success = true, message = TempData["Success"] });
+            return Ok(new { success = true, message = successMessage });
         }
 
+        TempData["Success"] = successMessage;
         return RedirectToAction(nameof(Index));
     }
 

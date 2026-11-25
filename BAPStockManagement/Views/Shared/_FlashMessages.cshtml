@@ -1,16 +1,32 @@
-@if (TempData["Success"] is string success)
-{
-    <div class="alert alert-success alert-dismissible d-flex align-items-center gap-2 mb-4" role="alert">
-        <i class="bi bi-check-circle-fill flex-shrink-0"></i>
-        <span>@success</span>
-        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:.8rem"></button>
-    </div>
+@{
+    var notifications = new List<(string Type, string Message)>();
+    foreach (var (key, type) in new[]
+    {
+        ("Success", "success"),
+        ("Error", "error"),
+        ("Warning", "warning"),
+        ("Info", "info")
+    })
+    {
+        if (TempData[key] is string message && !string.IsNullOrWhiteSpace(message))
+        {
+            notifications.Add((type, message));
+        }
+    }
+
+    var modelErrors = ViewData.ModelState.Values
+        .SelectMany(entry => entry.Errors)
+        .Select(entry => entry.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+    if (modelErrors.Count > 0)
+    {
+        notifications.Add(("error", string.Join(" ", modelErrors)));
+    }
 }
-@if (TempData["Error"] is string error)
+
+@foreach (var notification in notifications)
 {
-    <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2 mb-4" role="alert">
-        <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
-        <span>@error</span>
-        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:.8rem"></button>
-    </div>
+    <div hidden data-bap-notification data-type="@notification.Type" data-message="@notification.Message"></div>
 }

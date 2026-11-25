@@ -112,7 +112,7 @@
 }
 
 <form asp-action="Delete" method="post" class="d-inline"
-      onsubmit="return confirm('ยืนยันลบบิล @Model.BillNo ?');">
+      data-bap-confirm="ยืนยันลบบิล @Model.BillNo หรือไม่?">
     @Html.AntiForgeryToken()
     <input type="hidden" name="id" value="@Model.SaleBillId" />
     <button type="submit" class="btn btn-outline-danger btn-sm">ลบบิล</button>
