@@ -55,6 +55,104 @@ public class HomeDashboardViewModel
     public int IncreasingSalesTrendCount { get; set; }
 
     public IReadOnlyList<StockAlertItem> OutOfStockItems { get; set; } = [];
+
+    public SmartStockDemoDashboardViewModel SmartStockDemo { get; set; } = new();
+}
+
+public sealed class SmartStockDemoDashboardViewModel
+{
+    public string ModelName { get; set; } = "SARIMA_1step";
+
+    public int ActualSales { get; set; }
+
+    public int ForecastSales { get; set; }
+
+    public int ProductsAtRisk { get; set; }
+
+    public IReadOnlyList<SmartStockDemoWeeklyPoint> WeeklySales { get; set; } = [];
+
+    public IReadOnlyList<SmartStockDemoSegmentSummary> SegmentSummaries { get; set; } = [];
+
+    public IReadOnlyList<SmartStockDemoRiskItem> StockRisks { get; set; } = [];
+
+    public IReadOnlyList<SmartStockDemoPurchaseItem> PurchaseRecommendations { get; set; } = [];
+
+    public IReadOnlyList<SmartStockDemoMetric> ModelMetrics { get; set; } = [];
+}
+
+public sealed class SmartStockDemoWeeklyPoint
+{
+    public string WeekStart { get; set; } = string.Empty;
+
+    public string Segment { get; set; } = string.Empty;
+
+    public int ActualSales { get; set; }
+
+    public int ForecastSales { get; set; }
+}
+
+public sealed class SmartStockDemoSegmentSummary
+{
+    public string Segment { get; set; } = string.Empty;
+
+    public int ActualSales { get; set; }
+
+    public int ForecastSales { get; set; }
+
+    public int Variance { get; set; }
+}
+
+public sealed class SmartStockDemoRiskItem
+{
+    public int ProductId { get; set; }
+
+    public string ProductName { get; set; } = string.Empty;
+
+    public string Segment { get; set; } = string.Empty;
+
+    public int CurrentStock { get; set; }
+
+    public int ForecastDemand { get; set; }
+
+    public int SafetyStock { get; set; }
+
+    public int EstimatedRemainingStock { get; set; }
+
+    public int RiskScore { get; set; }
+
+    public string RiskLevel { get; set; } = string.Empty;
+
+    public string RiskReason { get; set; } = string.Empty;
+
+    public string RecommendedAction { get; set; } = string.Empty;
+}
+
+public sealed class SmartStockDemoPurchaseItem
+{
+    public int ProductId { get; set; }
+
+    public string ProductName { get; set; } = string.Empty;
+
+    public int CurrentStock { get; set; }
+
+    public int ForecastDemand { get; set; }
+
+    public int SafetyStock { get; set; }
+
+    public int EstimatedRemainingStock { get; set; }
+
+    public int SuggestedQuantity { get; set; }
+
+    public string Priority { get; set; } = string.Empty;
+
+    public string RecommendationReason { get; set; } = string.Empty;
+}
+
+public sealed class SmartStockDemoMetric
+{
+    public string Name { get; set; } = string.Empty;
+
+    public string Value { get; set; } = string.Empty;
 }
 
 public class CategoryStockChartItem

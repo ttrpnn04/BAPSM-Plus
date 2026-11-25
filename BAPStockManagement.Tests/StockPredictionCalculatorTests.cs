@@ -184,6 +184,39 @@ public class StockPredictionCalculatorTests
         Assert.Contains("ประวัติรับเข้าเพียงพอ", result.DecisionReason);
     }
 
+    [Fact]
+    public void SmartStockDemoCalculator_CalculatesConnectedRiskAndPurchaseQuantity()
+    {
+        var (risk, purchase) = SmartStockDemoCalculator.Analyze(
+            new SmartStockInventoryInput(1001, "Mountain Bicycle 20\"", "Bicycle", 8, 45, 5));
+
+        Assert.Equal("High", risk.RiskLevel);
+        Assert.Equal(-37, risk.EstimatedRemainingStock);
+        Assert.Equal(42, purchase.SuggestedQuantity);
+        Assert.Equal("Urgent", purchase.Priority);
+    }
+
+    [Fact]
+    public void SmartStockDemoCalculator_UsesSafetyStockToClassifyMediumRisk()
+    {
+        var (risk, purchase) = SmartStockDemoCalculator.Analyze(
+            new SmartStockInventoryInput(2004, "Kids Ride-on Red", "Ride-on", 30, 35, 5));
+
+        Assert.Equal("Medium", risk.RiskLevel);
+        Assert.Equal(10, purchase.SuggestedQuantity);
+    }
+
+    [Fact]
+    public void SmartStockDemoCalculator_ReturnsNoPurchaseWhenStockIsSufficient()
+    {
+        var (risk, purchase) = SmartStockDemoCalculator.Analyze(
+            new SmartStockInventoryInput(4002, "Pool Filter Cartridge", "Pool", 35, 26, 5));
+
+        Assert.Equal("Low", risk.RiskLevel);
+        Assert.Equal(0, purchase.SuggestedQuantity);
+        Assert.Equal("Low", purchase.Priority);
+    }
+
     private static StockPredictionViewModel CreatePrediction(
         int currentStock,
         StockRiskLevel riskLevel,

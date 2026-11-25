@@ -1,0 +1,308 @@
+@model BAPStockManagement.ViewModels.Home.SmartStockDemoDashboardViewModel
+
+<div class="smart-stock-demo">
+    <div class="greeting-bar">
+        <h1>BAPSM+ Smart Stock AI</h1>
+        <p>ตัวอย่างการใช้ AI สำหรับวิเคราะห์สต็อกและคำแนะนำการเติมสินค้า · <strong>Demo Data</strong></p>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-primary h-100">
+                <div><div class="stat-label">Total Products</div><div class="stat-value">@Model.StockRisks.Count</div><div class="stat-sub">Prepared inventory records</div></div>
+                <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-danger h-100">
+                <div><div class="stat-label">High Risk</div><div class="stat-value">@Model.StockRisks.Count(item => item.RiskLevel == "High")</div><div class="stat-sub">Immediate review</div></div>
+                <div class="stat-icon"><i class="bi bi-exclamation-octagon"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-warning h-100">
+                <div><div class="stat-label">Medium Risk</div><div class="stat-value">@Model.StockRisks.Count(item => item.RiskLevel == "Medium")</div><div class="stat-sub">Prepare replenishment</div></div>
+                <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-success h-100">
+                <div><div class="stat-label">Low Risk</div><div class="stat-value">@Model.StockRisks.Count(item => item.RiskLevel == "Low")</div><div class="stat-sub">Continue monitoring</div></div>
+                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-primary h-100">
+                <div>
+                    <div class="stat-label">Actual Sales · Demo</div>
+                    <div class="stat-value">@Model.ActualSales.ToString("N0")</div>
+                    <div class="stat-sub">ยอดขายตัวอย่าง 6 สัปดาห์</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-bag-check"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-info h-100">
+                <div>
+                    <div class="stat-label">Forecast Sales · Demo</div>
+                    <div class="stat-value">@Model.ForecastSales.ToString("N0")</div>
+                    <div class="stat-sub">Sample forecast output</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-warning h-100">
+                <div>
+                    <div class="stat-label">Products at Risk · Demo</div>
+                    <div class="stat-value">@Model.ProductsAtRisk.ToString("N0")</div>
+                    <div class="stat-sub">High / Medium / Low</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-success h-100">
+                <div>
+                    <div class="stat-label">Active ML Model</div>
+                    <div class="stat-value smart-stock-model-value">@Model.ModelName</div>
+                    <div class="stat-sub">Demo forecasting model</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-cpu"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-8">
+            <div class="chart-card smart-stock-chart-card h-100">
+                <div class="chart-card__header">
+                    <div>
+                        <h2>Weekly Actual vs. Forecast Sales</h2>
+                        <p>Sample forecast · filter by product segment</p>
+                    </div>
+                    <div class="chart-legend">
+                        <span><i class="legend-dot smart-stock-legend-actual"></i>Actual Sales</span>
+                        <span><i class="legend-dot smart-stock-legend-forecast"></i>Forecast Sales</span>
+                    </div>
+                </div>
+                <div class="smart-stock-filter" aria-label="Filter by segment">
+                    @foreach (var segment in new[] { "All", "Bicycle", "Ride-on", "Tyre", "Pool" })
+                    {
+                        <button type="button"
+                                class="btn btn-sm @(segment == "All" ? "btn-primary" : "btn-outline-secondary")"
+                                data-smart-stock-filter="@segment"
+                                aria-pressed="@(segment == "All" ? "true" : "false")">
+                            @segment
+                        </button>
+                    }
+                </div>
+                <div class="smart-stock-forecast-chart" data-smart-stock-chart>
+                    <svg viewBox="0 0 700 240" role="img" aria-label="Weekly actual and forecast sales chart">
+                        <g class="smart-stock-chart-grid">
+                            @for (var index = 0; index <= 4; index++)
+                            {
+                                var y = 20 + index * 50;
+                                <line x1="55" y1="@y" x2="680" y2="@y"></line>
+                            }
+                        </g>
+                        <polyline class="smart-stock-actual-line" fill="none" points=""></polyline>
+                        <polyline class="smart-stock-forecast-line" fill="none" points=""></polyline>
+                        <g class="smart-stock-actual-points"></g>
+                        <g class="smart-stock-forecast-points"></g>
+                    </svg>
+                </div>
+                <div class="smart-stock-chart-labels" data-smart-stock-chart-labels></div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="chart-card h-100">
+                <div class="chart-card__header">
+                    <div>
+                        <h2>Model Information</h2>
+                        <p>Selected forecasting model</p>
+                    </div>
+                    <i class="bi bi-cpu"></i>
+                </div>
+                <div class="smart-stock-model-summary">
+                    <div>
+                        <span>Model</span>
+                        <strong>@Model.ModelName</strong>
+                    </div>
+                    <div>
+                        <span>Status</span>
+                        <strong>Demo / Illustrative</strong>
+                    </div>
+                </div>
+                <div class="smart-stock-metrics">
+                    @foreach (var metric in Model.ModelMetrics)
+                    {
+                        <div>
+                            <span>@metric.Name</span>
+                            <strong>@metric.Value</strong>
+                        </div>
+                    }
+                </div>
+                <p class="smart-stock-demo-note">Evaluation values are not invented. Verify experiment results before displaying numeric metrics.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-7">
+            <div class="chart-card h-100">
+                <div class="chart-card__header">
+                    <div>
+                        <h2>AI Stockout Risk Analysis</h2>
+                        <p>Sample ML output · not a live prediction</p>
+                    </div>
+                    <span class="smart-stock-demo-badge">Demo Data</span>
+                </div>
+                <div class="smart-stock-table-controls">
+                    <input type="search"
+                           class="form-control form-control-sm"
+                           placeholder="Search product"
+                           data-smart-stock-search />
+                    <select class="form-select form-select-sm" data-smart-stock-risk-filter aria-label="Filter risk level">
+                        <option value="All">All risks</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                    <select class="form-select form-select-sm" data-smart-stock-sort aria-label="Sort products">
+                        <option value="risk">Sort by risk</option>
+                        <option value="remaining">Sort by remaining stock</option>
+                        <option value="name">Sort by name</option>
+                    </select>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0 smart-stock-table" data-smart-stock-risk-table>
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Segment</th>
+                                <th class="text-end">Stock</th>
+                                <th class="text-end">Demand</th>
+                                <th>Risk</th>
+                                <th>Explanation / action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.StockRisks)
+                            {
+                                var riskClass = item.RiskLevel switch
+                                {
+                                    "High" => "smart-stock-risk-high",
+                                    "Medium" => "smart-stock-risk-medium",
+                                    _ => "smart-stock-risk-low"
+                                };
+                                var purchase = Model.PurchaseRecommendations.FirstOrDefault(recommendation => recommendation.ProductId == item.ProductId);
+                                <tr data-smart-stock-risk-row
+                                    data-name="@item.ProductName"
+                                    data-risk="@item.RiskLevel"
+                                    data-remaining="@item.EstimatedRemainingStock"
+                                    data-id="@item.ProductId"
+                                    data-product-name="@item.ProductName"
+                                    data-current-stock="@item.CurrentStock"
+                                    data-forecast-demand="@item.ForecastDemand"
+                                    data-safety-stock="@item.SafetyStock"
+                                    data-remaining="@item.EstimatedRemainingStock"
+                                    data-risk-level="@item.RiskLevel"
+                                    data-risk-score="@item.RiskScore"
+                                    data-risk-reason="@item.RiskReason"
+                                    data-purchase-quantity="@(purchase?.SuggestedQuantity ?? 0)"
+                                    data-purchase-priority="@(purchase?.Priority ?? "Low")"
+                                    data-purchase-reason="@(purchase?.RecommendationReason ?? "No replenishment is recommended.")"
+                                    class="smart-stock-risk-row"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#smartStockCombinedDetailModal">
+                                    <td>
+                                        <strong>@item.ProductName</strong>
+                                        <small class="d-block text-muted">#@item.ProductId</small>
+                                    </td>
+                                    <td>@item.Segment</td>
+                                    <td class="text-end">@item.CurrentStock</td>
+                                    <td class="text-end">@item.ForecastDemand</td>
+                                    <td><span class="smart-stock-risk @riskClass">@item.RiskLevel</span></td>
+                                    <td>
+                                        <span>@item.RiskReason</span>
+                                        <small class="d-block text-muted">@item.RecommendedAction</small>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-5">
+            <div class="chart-card h-100">
+                <div class="chart-card__header">
+                    <div>
+                        <h2>AI Purchase Recommendations</h2>
+                        <p>Illustrative recommendations only</p>
+                    </div>
+                    <span class="smart-stock-demo-badge">Suggestions</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0 smart-stock-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-end">Stock</th>
+                                <th class="text-end">Suggested</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.PurchaseRecommendations)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@item.ProductName</strong>
+                                        <small class="d-block text-muted">@item.RecommendationReason</small>
+                                    </td>
+                                    <td class="text-end">@item.CurrentStock</td>
+                                    <td class="text-end fw-semibold">@item.SuggestedQuantity</td>
+                                    <td><span class="smart-stock-priority">@item.Priority</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <div class="chart-card__header">
+            <div>
+                <h2>Segment Analysis</h2>
+                <p>Six-week sample totals by product segment</p>
+            </div>
+            <span class="smart-stock-demo-badge">Demo Data</span>
+        </div>
+        <div class="row g-3 smart-stock-segments">
+            @foreach (var segment in Model.SegmentSummaries)
+            {
+                <div class="col-sm-6 col-xl-3">
+                    <div class="smart-stock-segment-card">
+                        <span>@segment.Segment</span>
+                        <strong>Actual @segment.ActualSales.ToString("N0")</strong>
+                        <small>Forecast @segment.ForecastSales.ToString("N0")</small>
+                        <em class="@(segment.Variance >= 0 ? "text-success" : "text-danger")">
+                            @(segment.Variance >= 0 ? "+" : "")@segment.Variance.ToString("N0") variance
+                        </em>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script id="smartStockChartData" type="application/json">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeeklySales))
+</script>

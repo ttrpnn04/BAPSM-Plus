@@ -237,7 +237,6 @@
                             <div class="stat-label">เสี่ยงสูง / หมดสต็อก</div>
                             <div class="stat-value">@Model.CriticalPredictionCount.ToString("N0")</div>
                             <div class="stat-sub">คาดว่าจะหมดภายใน 3 วัน</div>
-                            <a class="dashboard-ai-summary__link" href="#dashboard-ai-alerts">ตรวจสอบสินค้าที่มีความเสี่ยง</a>
                         </div>
                         <div class="stat-icon"><i class="bi bi-exclamation-octagon"></i></div>
                     </div>
@@ -262,8 +261,9 @@
                         <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
                     </div>
                 </div>
+
             </div>
-            <div class="dashboard-grid mb-4">
+            <div class="dashboard-grid mb-4 d-none">
                 @await Html.PartialAsync("_SmartRestockCard", Model)
                 <div id="dashboard-ai-alerts" class="chart-card dashboard-insight-card dashboard-card">
                     <div class="chart-card__header">
@@ -436,6 +436,10 @@
                         }
                     </div>
                 </div>
+            </div>
+
+            <div class="dashboard-grid mb-4">
+                @await Html.PartialAsync("_SmartStockConnectedCards", Model.SmartStockDemo)
             </div>
 
             @await Html.PartialAsync("_TopUsedProductsCard", Model)
@@ -687,11 +691,16 @@
                 </div>
             </div>
         </div>
+
+        <div class="carousel-item">
+            @await Html.PartialAsync("_SmartStockAiDashboard", Model.SmartStockDemo)
+        </div>
     </div>
 
     <div class="carousel-indicators dashboard-section-carousel__indicators">
         <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="หน้า 1"></button>
         <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="1" aria-label="หน้า 2"></button>
+        <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="2" aria-label="หน้า 3"></button>
     </div>
 </div>
 <div class="modal fade" id="topUsedDetailsModal" tabindex="-1" aria-labelledby="topUsedDetailsModalTitle" aria-hidden="true">
@@ -1353,6 +1362,172 @@
             quantityRange.addEventListener('input', function () {
                 updateSimulation(false);
             });
+        })();
+    </script>
+    <script>
+        (function () {
+            var modal = document.getElementById('smartStockCombinedDetailModal');
+            if (modal) {
+                modal.addEventListener('show.bs.modal', function (event) {
+                    var trigger = event.relatedTarget;
+                    if (!trigger) return;
+                    document.getElementById('smartStockDetailName').textContent =
+                        trigger.dataset.productName || trigger.dataset.purchaseName || '';
+                    document.getElementById('smartStockDetailCurrent').textContent =
+                        (trigger.dataset.currentStock || trigger.dataset.purchaseCurrent || '0') + ' units';
+                    document.getElementById('smartStockDetailDemand').textContent =
+                        (trigger.dataset.forecastDemand || trigger.dataset.purchaseDemand || '0') + ' units';
+                    document.getElementById('smartStockDetailSafety').textContent =
+                        (trigger.dataset.safetyStock || trigger.dataset.purchaseSafety || '0') + ' units';
+                    document.getElementById('smartStockDetailRemaining').textContent =
+                        (trigger.dataset.remaining || '0') + ' units';
+                    document.getElementById('smartStockDetailRisk').textContent =
+                        trigger.dataset.riskLevel || trigger.dataset.risk || 'Low';
+                    document.getElementById('smartStockDetailScore').textContent =
+                        (trigger.dataset.riskScore || '0') + '/100';
+                    document.getElementById('smartStockDetailReason').textContent =
+                        trigger.dataset.riskReason || 'Prepared sample data indicates this product should be monitored.';
+                    document.getElementById('smartStockDetailQuantity').textContent =
+                        (trigger.dataset.purchaseQuantity || '0') + ' units';
+                    document.getElementById('smartStockDetailPriority').textContent =
+                        'Priority: ' + (trigger.dataset.purchasePriority || 'Low');
+                    document.getElementById('smartStockDetailPurchaseReason').textContent =
+                        trigger.dataset.purchaseReason || 'No replenishment quantity is recommended.';
+                });
+            }
+
+            var search = document.querySelector('[data-smart-stock-search]');
+            var riskFilter = document.querySelector('[data-smart-stock-risk-filter]');
+            var sort = document.querySelector('[data-smart-stock-sort]');
+            var table = document.querySelector('[data-smart-stock-risk-table]');
+            if (table) {
+                function applyRiskTable() {
+                    var query = (search ? search.value : '').toLowerCase();
+                    var filter = riskFilter ? riskFilter.value : 'All';
+                    var rows = Array.prototype.slice.call(table.querySelectorAll('[data-smart-stock-risk-row]'));
+
+                    rows.forEach(function (row) {
+                        var matchesName = row.dataset.name.toLowerCase().indexOf(query) >= 0;
+                        var matchesRisk = filter === 'All' || row.dataset.risk === filter;
+                        row.hidden = !(matchesName && matchesRisk);
+                    });
+
+                    var visibleRows = rows.filter(function (row) { return !row.hidden; });
+                    var sortMode = sort ? sort.value : 'risk';
+                    var riskOrder = { High: 0, Medium: 1, Low: 2 };
+                    visibleRows.sort(function (a, b) {
+                        if (sortMode === 'remaining') {
+                            return Number(a.dataset.remaining) - Number(b.dataset.remaining);
+                        }
+                        if (sortMode === 'name') {
+                            return a.dataset.name.localeCompare(b.dataset.name);
+                        }
+                        return (riskOrder[a.dataset.risk] ?? 3) - (riskOrder[b.dataset.risk] ?? 3);
+                    });
+                    visibleRows.forEach(function (row) {
+                        table.tBodies[0].appendChild(row);
+                    });
+                }
+
+                if (search) search.addEventListener('input', applyRiskTable);
+                if (riskFilter) riskFilter.addEventListener('change', applyRiskTable);
+                if (sort) sort.addEventListener('change', applyRiskTable);
+                applyRiskTable();
+            }
+
+            document.querySelectorAll('[data-smart-stock-open-third]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var carousel = bootstrap.Carousel.getOrCreateInstance(document.getElementById('dashboardSectionCarousel'));
+                    carousel.to(2);
+                });
+            });
+        })();
+    </script>
+    <script>
+        (function () {
+            var chartRoot = document.querySelector('[data-smart-stock-chart]');
+            var dataScript = document.getElementById('smartStockChartData');
+            if (!chartRoot || !dataScript) return;
+
+            var data = JSON.parse(dataScript.textContent);
+            var filterButtons = document.querySelectorAll('[data-smart-stock-filter]');
+            var actualLine = chartRoot.querySelector('.smart-stock-actual-line');
+            var forecastLine = chartRoot.querySelector('.smart-stock-forecast-line');
+            var actualPoints = chartRoot.querySelector('.smart-stock-actual-points');
+            var forecastPoints = chartRoot.querySelector('.smart-stock-forecast-points');
+            var labelRoot = document.querySelector('[data-smart-stock-chart-labels]');
+
+            function getSeries(segment) {
+                var rows = segment === 'All'
+                    ? data
+                    : data.filter(function (item) { return item.Segment === segment; });
+                var weekMap = {};
+                rows.forEach(function (item) {
+                    if (!weekMap[item.WeekStart]) {
+                        weekMap[item.WeekStart] = { week: item.WeekStart, actual: 0, forecast: 0 };
+                    }
+                    weekMap[item.WeekStart].actual += item.ActualSales;
+                    weekMap[item.WeekStart].forecast += item.ForecastSales;
+                });
+                return Object.values(weekMap).sort(function (a, b) {
+                    return a.week.localeCompare(b.week);
+                });
+            }
+
+            function render(segment) {
+                var series = getSeries(segment);
+                if (series.length === 0) return;
+
+                var left = 55;
+                var right = 680;
+                var top = 20;
+                var bottom = 220;
+                var maxValue = Math.max.apply(null, series.map(function (item) {
+                    return Math.max(item.actual, item.forecast);
+                }));
+                maxValue = Math.ceil(maxValue / 100) * 100;
+
+                function points(property) {
+                    return series.map(function (item, index) {
+                        var x = left + (right - left) * index / Math.max(series.length - 1, 1);
+                        var y = bottom - item[property] * (bottom - top) / maxValue;
+                        return x.toFixed(1) + ',' + y.toFixed(1);
+                    }).join(' ');
+                }
+
+                actualLine.setAttribute('points', points('actual'));
+                forecastLine.setAttribute('points', points('forecast'));
+                actualPoints.innerHTML = '';
+                forecastPoints.innerHTML = '';
+
+                series.forEach(function (item, index) {
+                    var x = left + (right - left) * index / Math.max(series.length - 1, 1);
+                    var actualY = bottom - item.actual * (bottom - top) / maxValue;
+                    var forecastY = bottom - item.forecast * (bottom - top) / maxValue;
+                    actualPoints.innerHTML += '<circle cx="' + x + '" cy="' + actualY + '" r="4" class="smart-stock-actual-point"><title>Actual ' + item.actual.toLocaleString() + '</title></circle>';
+                    forecastPoints.innerHTML += '<circle cx="' + x + '" cy="' + forecastY + '" r="4" class="smart-stock-forecast-point"><title>Forecast ' + item.forecast.toLocaleString() + '</title></circle>';
+                });
+
+                labelRoot.innerHTML = series.map(function (item) {
+                    return '<span>' + item.week.slice(5).replace('-', '/') + '</span>';
+                }).join('');
+            }
+
+            filterButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    filterButtons.forEach(function (item) {
+                        item.classList.remove('btn-primary');
+                        item.classList.add('btn-outline-secondary');
+                        item.setAttribute('aria-pressed', 'false');
+                    });
+                    button.classList.remove('btn-outline-secondary');
+                    button.classList.add('btn-primary');
+                    button.setAttribute('aria-pressed', 'true');
+                    render(button.dataset.smartStockFilter);
+                });
+            });
+
+            render('All');
         })();
     </script>
 }

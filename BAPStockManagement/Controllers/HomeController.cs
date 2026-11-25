@@ -14,11 +14,16 @@ public class HomeController : Controller
 {
     private readonly BAPStockContext _context;
     private readonly StockPredictionService _stockPredictionService;
+    private readonly ISmartStockDemoDataProvider _smartStockDemoDataProvider;
 
-    public HomeController(BAPStockContext context, StockPredictionService stockPredictionService)
+    public HomeController(
+        BAPStockContext context,
+        StockPredictionService stockPredictionService,
+        ISmartStockDemoDataProvider smartStockDemoDataProvider)
     {
         _context = context;
         _stockPredictionService = stockPredictionService;
+        _smartStockDemoDataProvider = smartStockDemoDataProvider;
     }
 
     public async Task<IActionResult> Index()
@@ -387,7 +392,8 @@ public class HomeController : Controller
             StockoutWithinSevenDaysCount = stockPredictions.Count(prediction =>
                 prediction.DaysUntilStockout.HasValue && prediction.DaysUntilStockout <= 7),
             IncreasingSalesTrendCount = stockPredictions.Count(prediction => prediction.SalesTrend == StockSalesTrend.Increasing),
-            OutOfStockItems = outOfStockItems
+            OutOfStockItems = outOfStockItems,
+            SmartStockDemo = _smartStockDemoDataProvider.GetDashboardData()
         });
     }
 
