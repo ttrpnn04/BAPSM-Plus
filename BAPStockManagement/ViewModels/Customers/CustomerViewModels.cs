@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace BAPStockManagement.ViewModels.Customers;
 
@@ -87,4 +88,9 @@ public class CustomerImportViewModel
     [Required(ErrorMessage = "กรุณาเลือกไฟล์ Excel")]
     [Display(Name = "ไฟล์ Excel บิลขาย / ใบปะ")]
     public IFormFile? File { get; set; }
+
+    [BindNever]
+    public CustomerImportPreview? Preview { get; set; }
 }
+
+public record CustomerImportPreview(int CustomerCount, string Issues);

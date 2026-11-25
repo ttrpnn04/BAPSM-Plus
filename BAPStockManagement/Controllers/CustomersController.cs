@@ -1,7 +1,7 @@
 using BAPStockManagement.Constants;
 using BAPStockManagement.Models;
+using BAPStockManagement.Services;
 using BAPStockManagement.ViewModels.Customers;
-using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -162,8 +162,9 @@ public class CustomersController : Controller
     [Authorize(Roles = AppRoles.AdminManage)]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Import(CustomerImportViewModel model)
+    public async Task<IActionResult> Import(CustomerImportViewModel model, [FromForm] string? operation = null)
     {
+        var save = operation == "import";
         if (model.File == null || model.File.Length == 0)
         {
             ModelState.AddModelError(nameof(model.File), "กรุณาเลือกไฟล์ Excel");
@@ -177,23 +178,41 @@ public class CustomersController : Controller
             return View(model);
         }
 
-        await using var stream = new MemoryStream();
-        await model.File.CopyToAsync(stream);
-        stream.Position = 0;
-
+        CustomerExcelReader.Result result;
         int inserted;
         int updated;
         try
         {
-            (inserted, updated) = await ImportCustomersFromExcelAsync(stream);
+            await using var stream = model.File.OpenReadStream();
+            result = CustomerExcelReader.Read(stream, HttpContext.RequestAborted);
+            if (!save)
+            {
+                model.Preview = new CustomerImportPreview(result.Customers.Count, DescribeImportIssues(result));
+                return View(model);
+            }
+
+            if (result.Customers.Count == 0)
+            {
+                ModelState.AddModelError(string.Empty, "ไม่พบรายการลูกค้าที่นำเข้าได้");
+                var issues = DescribeImportIssues(result);
+                if (issues.Length > 0)
+                {
+                    ModelState.AddModelError(string.Empty, issues);
+                }
+                return View(model);
+            }
+
+            (inserted, updated) = await SaveImportedCustomersAsync(result.Customers, HttpContext.RequestAborted);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            ModelState.AddModelError(string.Empty, $"อ่านไฟล์ไม่สำเร็จ: {ex.Message}");
+            var action = save ? "นำเข้าไฟล์" : "ตรวจไฟล์";
+            ModelState.AddModelError(string.Empty, $"{action}ไม่สำเร็จ: {ex.Message}");
             return View(model);
         }
 
         TempData["Success"] = $"นำเข้าลูกค้าสำเร็จ: เพิ่ม {inserted} รายการ, อัปเดต {updated} รายการ";
+        TempData["CustomerImportIssues"] = DescribeImportIssues(result);
         return RedirectToAction(nameof(Index));
     }
 
@@ -255,74 +274,52 @@ public class CustomersController : Controller
         return Json(items);
     }
 
-    private async Task<(int Inserted, int Updated)> ImportCustomersFromExcelAsync(Stream stream)
+    private async Task<(int Inserted, int Updated)> SaveImportedCustomersAsync(
+        IReadOnlyCollection<Customer> customers, CancellationToken cancellationToken)
     {
-        using var workbook = new XLWorkbook(stream);
-        var worksheet = workbook.Worksheets
-            .FirstOrDefault(ws =>
-                string.Equals(ws.Name, "customer", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(ws.Name, "customer_BAP", StringComparison.OrdinalIgnoreCase))
-            ?? workbook.Worksheet(1);
-
-        var existing = await _context.Customers.ToDictionaryAsync(c => c.CustomerCode);
+        var existing = await _context.Customers.ToDictionaryAsync(c => c.CustomerCode, cancellationToken);
         var inserted = 0;
         var updated = 0;
         var now = DateTime.Now;
-        var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 2;
-
-        for (var row = 3; row <= lastRow; row++)
+        foreach (var imported in customers)
         {
-            var codeCell = worksheet.Cell(row, 1).GetString().Trim();
-            if (string.IsNullOrWhiteSpace(codeCell) || !int.TryParse(codeCell, out var code))
+            imported.UpdatedAt = now;
+            if (!existing.TryGetValue(imported.CustomerCode, out var customer))
             {
-                var numeric = worksheet.Cell(row, 1).Value;
-                if (!numeric.IsNumber)
-                {
-                    continue;
-                }
-
-                code = (int)numeric.GetNumber();
-            }
-
-            var name = worksheet.Cell(row, 3).GetString().Trim();
-            if (string.IsNullOrWhiteSpace(name))
-            {
+                imported.CreatedAt = now;
+                _context.Customers.Add(imported);
+                inserted++;
                 continue;
             }
 
-            if (!existing.TryGetValue(code, out var customer))
-            {
-                customer = new Customer
-                {
-                    CustomerCode = code,
-                    CreatedAt = now,
-                    IsActive = true
-                };
-                _context.Customers.Add(customer);
-                existing[code] = customer;
-                inserted++;
-            }
-            else
-            {
-                updated++;
-            }
-
-            customer.Name = Truncate(name, 300)!;
-            customer.Address = Truncate(NullIfEmpty(worksheet.Cell(row, 4).GetString()), 500);
-            customer.District = Truncate(NullIfEmpty(worksheet.Cell(row, 5).GetString()), 100);
-            customer.Province = Truncate(NullIfEmpty(worksheet.Cell(row, 6).GetString()), 100);
-            customer.Phone1 = Truncate(NullIfEmpty(worksheet.Cell(row, 7).GetString()), 50);
-            customer.Phone2 = Truncate(NullIfEmpty(worksheet.Cell(row, 8).GetString()), 50);
-            customer.SalesZone = Truncate(NullIfEmpty(ReadCellAsText(worksheet.Cell(row, 9))), 50);
-            customer.TaxId = Truncate(NullIfEmpty(worksheet.Cell(row, 10).GetString().Trim().TrimStart('\'')), 50);
-            customer.ShippingInfo = Truncate(NullIfEmpty(worksheet.Cell(row, 11).GetString()), 500);
-            customer.CreditLimit = ReadDecimal(worksheet.Cell(row, 12));
-            customer.UpdatedAt = now;
-            customer.IsActive = true;
+            imported.CustomerId = customer.CustomerId;
+            imported.CreatedAt = customer.CreatedAt;
+            _context.Entry(customer).CurrentValues.SetValues(imported);
+            updated++;
         }
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
         return (inserted, updated);
+    }
+
+    private static string DescribeImportIssues(CustomerExcelReader.Result result)
+    {
+        var issues = new List<string>();
+        if (result.InvalidRows > 0)
+        {
+            var rows = string.Join(", ", result.InvalidRowExamples);
+            issues.Add($"ข้าม {result.InvalidRows} แถวที่รหัสหรือชื่อไม่ครบหรือไม่ถูกต้อง (เช่น แถว {rows})");
+        }
+        if (result.ConflictingCodes.Count > 0)
+        {
+            var codes = string.Join(", ", result.ConflictingCodes.Order().Take(12));
+            issues.Add($"ข้าม {result.ConflictingCodes.Count} รหัสที่มีหลายชื่อ ({codes})");
+        }
+        if (result.DuplicateRows > 0)
+        {
+            issues.Add($"รวม {result.DuplicateRows} แถวที่รหัสและชื่อซ้ำ โดยใช้ข้อมูลจากแถวท้ายสุด");
+        }
+        return string.Join(" · ", issues);
     }
 
     private static Customer MapToEntity(CustomerFormViewModel model, Customer customer)
@@ -363,35 +360,5 @@ public class CustomersController : Controller
     {
         var trimmed = value?.Trim();
         return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
-    }
-
-    private static string? Truncate(string? value, int max)
-    {
-        if (value == null)
-        {
-            return null;
-        }
-
-        return value.Length <= max ? value : value[..max];
-    }
-
-    private static string ReadCellAsText(IXLCell cell)
-    {
-        if (cell.Value.IsNumber)
-        {
-            return ((long)cell.Value.GetNumber()).ToString();
-        }
-
-        return cell.GetString().Trim();
-    }
-
-    private static decimal ReadDecimal(IXLCell cell)
-    {
-        if (cell.Value.IsNumber)
-        {
-            return (decimal)cell.Value.GetNumber();
-        }
-
-        return decimal.TryParse(cell.GetString().Trim(), out var value) ? value : 0m;
     }
 }

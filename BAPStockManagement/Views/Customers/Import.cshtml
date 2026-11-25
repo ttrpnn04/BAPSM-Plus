@@ -10,18 +10,31 @@
     </div>
 </div>
 
+@if (Model.Preview is { } preview)
+{
+    <div class="alert alert-info" role="status">
+        <p class="mb-1">ตรวจไฟล์แล้ว พบ <strong>@preview.CustomerCount ราย</strong> ที่พร้อมนำเข้า ยังไม่ได้บันทึกลงฐานข้อมูล</p>
+        @if (!string.IsNullOrEmpty(preview.Issues))
+        {
+            <p class="mb-1">@preview.Issues</p>
+        }
+        <p class="mb-0">หากต้องการบันทึก ให้เลือกไฟล์อีกครั้งแล้วกด “นำเข้าจริง”</p>
+    </div>
+}
+
 <form asp-action="Import" method="post" enctype="multipart/form-data" class="col-lg-6">
     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
     <div class="mb-3">
         <label asp-for="File" class="form-label"></label>
         <input asp-for="File" type="file" class="form-control" accept=".xlsx,.xlsm" />
-        <div class="form-text">ระบบจะอัปเดตตามรหัสลูกค้า ถ้ามีอยู่แล้วจะเขียนทับข้อมูล</div>
+        <div class="form-text">ตรวจไฟล์ได้โดยไม่เชื่อมต่อฐานข้อมูล เมื่อนำเข้าจริง ระบบจะเพิ่มหรืออัปเดตตามรหัสลูกค้า</div>
         <span asp-validation-for="File" class="text-danger"></span>
     </div>
 
-    <button type="submit" class="btn btn-primary">นำเข้า</button>
-    <a asp-action="Index" class="btn btn-outline-secondary">ยกเลิก</a>
+    <button type="submit" name="operation" value="preview" class="btn btn-primary">ตรวจไฟล์</button>
+    <button type="submit" name="operation" value="import" class="btn btn-outline-primary">นำเข้าจริง</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">กลับ</a>
 </form>
 
 @section Scripts {
