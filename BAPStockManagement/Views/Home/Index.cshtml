@@ -7,9 +7,18 @@
     var maxDailyMovement = Math.Max(Model.DailyMovementChartItems.Select(i => Math.Max(i.InPieces, i.OutPieces)).DefaultIfEmpty(0).Max(), 1);
 }
 
+<link rel="stylesheet" href="~/css/stock-analysis-arrow.css" asp-append-version="true" />
+
 <div class="greeting-bar">
     <h1>สวัสดี, @name 👋</h1>
     <p>ยินดีต้อนรับสู่ระบบจัดการสต็อกสินค้า BAP Stock</p>
+    <a class="dashboard-analysis-arrow"
+       asp-controller="StockAnalysis"
+       asp-action="Index"
+       aria-label="ไปหน้าวิเคราะห์สินค้า"
+       title="ไปหน้าวิเคราะห์สินค้า">
+        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+    </a>
 </div>
 
 <div class="row g-3 mb-4">

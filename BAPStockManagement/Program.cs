@@ -54,6 +54,8 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
+// ===== StockAI analysis (BEGIN/END) =====
+
 var app = builder.Build();
 
 var supportedCultures = new[] { new CultureInfo("en-GB") };
