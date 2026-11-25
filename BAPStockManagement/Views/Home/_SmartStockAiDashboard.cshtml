@@ -64,20 +64,10 @@
                 <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="stat-card stat-success h-100">
-                <div>
-                    <div class="stat-label">โมเดล ML ที่ใช้งาน</div>
-                    <div class="stat-value smart-stock-model-value">@Model.ModelName</div>
-                    <div class="stat-sub">โมเดลคาดการณ์ตัวอย่าง</div>
-                </div>
-                <div class="stat-icon"><i class="bi bi-cpu"></i></div>
-            </div>
-        </div>
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-xl-8">
+        <div class="col-12">
             <div class="chart-card smart-stock-chart-card h-100">
                 <div class="chart-card__header">
                     <div>
@@ -130,37 +120,6 @@
                     </svg>
                     <div class="smart-stock-chart-tooltip" data-smart-stock-tooltip role="status" aria-live="polite"></div>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-4">
-            <div class="chart-card h-100">
-                <div class="chart-card__header">
-                    <div>
-                        <h2>ข้อมูลโมเดล</h2>
-                        <p>โมเดล forecasting ที่เลือก</p>
-                    </div>
-                    <i class="bi bi-cpu"></i>
-                </div>
-                <div class="smart-stock-model-summary">
-                    <div>
-                        <span>โมเดล</span>
-                        <strong>@Model.ModelName</strong>
-                    </div>
-                    <div>
-                        <span>สถานะ</span>
-                        <strong>Demo / ตัวอย่าง</strong>
-                    </div>
-                </div>
-                <div class="smart-stock-metrics">
-                    @foreach (var metric in Model.ModelMetrics)
-                    {
-                        <div>
-                            <span>@metric.Name</span>
-                            <strong>@(metric.Value == "Not provided" ? "ยังไม่มีข้อมูล" : metric.Value)</strong>
-                        </div>
-                    }
-                </div>
-                <p class="smart-stock-demo-note">ไม่มีการสร้างค่าประเมินขึ้นเอง กรุณาใช้ผลทดลองที่ยืนยันก่อนแสดงค่าตัวเลข</p>
             </div>
         </div>
     </div>
