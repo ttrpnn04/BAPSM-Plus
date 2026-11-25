@@ -160,72 +160,76 @@ public static class ProductVariantSeeder
         BAPStockContext context,
         ILogger? logger = null)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync();
-        try
+        await context.ExecuteWithRetryAsync(async () =>
         {
-            foreach (var (alias, canonicalName) in ProductVariantDefaults.VariantAliases)
+            await using var transaction = await context.Database.BeginTransactionAsync();
+            try
             {
-                var sourceVariants = await context.ProductVariants
-                    .Include(v => v.StockBalance)
-                    .Include(v => v.StockTransactions)
-                    .Where(v => v.VariantName == alias)
-                    .ToListAsync();
-                var variantsToRemove = new List<ProductVariant>();
-
-                foreach (var source in sourceVariants)
+                foreach (var (alias, canonicalName) in ProductVariantDefaults.VariantAliases)
                 {
-                    var target = await context.ProductVariants
-                        .FirstOrDefaultAsync(v =>
-                            v.ProductId == source.ProductId &&
-                            v.VariantName == canonicalName);
+                    var sourceVariants = await context.ProductVariants
+                        .Include(v => v.StockBalance)
+                        .Include(v => v.StockTransactions)
+                        .Where(v => v.VariantName == alias)
+                        .ToListAsync();
+                    var variantsToRemove = new List<ProductVariant>();
 
-                    if (target == null)
+                    foreach (var source in sourceVariants)
                     {
-                        source.VariantName = canonicalName;
-                        continue;
+                        var target = await context.ProductVariants
+                            .FirstOrDefaultAsync(v =>
+                                v.ProductId == source.ProductId &&
+                                v.VariantName == canonicalName);
+
+                        if (target == null)
+                        {
+                            source.VariantName = canonicalName;
+                            continue;
+                        }
+
+                        foreach (var stockTransaction in source.StockTransactions.ToList())
+                        {
+                            stockTransaction.Variant = target;
+                            stockTransaction.VariantId = target.VariantId;
+                        }
+
+                        variantsToRemove.Add(source);
                     }
 
-                    foreach (var stockTransaction in source.StockTransactions.ToList())
+                    // Trigger จะคำนวณ StockBalance ของสีต้นทางและปลายทางใหม่เมื่อย้าย transaction
+                    await context.SaveChangesAsync();
+
+                    foreach (var source in variantsToRemove)
                     {
-                        stockTransaction.Variant = target;
-                        stockTransaction.VariantId = target.VariantId;
+                        if (source.StockBalance != null)
+                        {
+                            context.StockBalances.Remove(source.StockBalance);
+                        }
+
+                        context.ProductVariants.Remove(source);
                     }
 
-                    variantsToRemove.Add(source);
-                }
+                    await context.SaveChangesAsync();
 
-                // Trigger จะคำนวณ StockBalance ของสีต้นทางและปลายทางใหม่เมื่อย้าย transaction
-                await context.SaveChangesAsync();
-
-                foreach (var source in variantsToRemove)
-                {
-                    if (source.StockBalance != null)
+                    if (sourceVariants.Count > 0)
                     {
-                        context.StockBalances.Remove(source.StockBalance);
+                        logger?.LogInformation(
+                            "รวมสีซ้ำ {Alias} เป็น {CanonicalName} จำนวน {Count} รายการ",
+                            alias,
+                            canonicalName,
+                            sourceVariants.Count);
                     }
-
-                    context.ProductVariants.Remove(source);
                 }
 
-                await context.SaveChangesAsync();
-
-                if (sourceVariants.Count > 0)
-                {
-                    logger?.LogInformation(
-                        "รวมสีซ้ำ {Alias} เป็น {CanonicalName} จำนวน {Count} รายการ",
-                        alias,
-                        canonicalName,
-                        sourceVariants.Count);
-                }
+                await transaction.CommitAsync();
+                return true;
             }
-
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
     }
 
     public static Task EnsureDefaultColorsAsync(Product product, ILogger? logger = null)

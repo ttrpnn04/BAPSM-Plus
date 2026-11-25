@@ -21,8 +21,25 @@ builder.Services.AddScoped<BAPStockManagement.Services.ISmartStockDemoDataProvid
 
 builder.Services.AddControllersWithViews();
 
+var configuredConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
+var connectionStringBuilder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(configuredConnectionString);
+var connectionPassword = builder.Configuration["ConnectionStrings:DefaultConnectionPassword"];
+if (!string.IsNullOrWhiteSpace(connectionPassword))
+{
+    connectionStringBuilder.Password = connectionPassword;
+}
+
+if (string.IsNullOrWhiteSpace(connectionStringBuilder.Password))
+{
+    throw new InvalidOperationException(
+        "Set ConnectionStrings:DefaultConnectionPassword using User Secrets or an environment variable.");
+}
+
 builder.Services.AddDbContext<BAPStockContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        connectionStringBuilder.ConnectionString,
+        sqlServerOptions => sqlServerOptions.EnableRetryOnFailure()));
 
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
@@ -66,12 +83,18 @@ app.UseRequestLocalization(new RequestLocalizationOptions
     SupportedUICultures = supportedCultures
 });
 
-using (var scope = app.Services.CreateScope())
+if (builder.Configuration.GetValue<bool>("Database:RunStartupSeeders"))
 {
+    using var scope = app.Services.CreateScope();
     await IdentitySeeder.SeedAsync(scope.ServiceProvider);
     await StockDocumentSeeder.EnsureAsync(scope.ServiceProvider);
     await ProductVariantSeeder.SeedAsync(scope.ServiceProvider);
     await StockLedgerRepairSeeder.EnsureAsync(scope.ServiceProvider);
+}
+else
+{
+    app.Logger.LogInformation(
+        "Startup database seeders are disabled. Set Database:RunStartupSeeders=true to opt in.");
 }
 
 if (!app.Environment.IsDevelopment())

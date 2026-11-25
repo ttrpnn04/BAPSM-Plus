@@ -54,28 +54,32 @@ public static class StockLedgerRepairSeeder
             (await userManager.FindByEmailAsync("superadmin@bap.local"))?.Id
             ?? await context.Users.Select(u => u.Id).FirstOrDefaultAsync();
 
-        await using var tx = await context.Database.BeginTransactionAsync();
-        try
+        await context.ExecuteWithRetryAsync(async () =>
         {
-            var knownCount = await RestoreKnownWipedOpeningsAsync(context, receiveType.TransactionTypeId, repairUserId, logger);
-            var negCount = await ZeroUnknownNegativesAsync(context, receiveType.TransactionTypeId, repairUserId, logger);
-            var gapCount = await ReconcileBalanceGapsAsync(
-                context,
-                receiveType.TransactionTypeId,
-                issueType.TransactionTypeId,
-                repairUserId,
-                logger);
+            await using var tx = await context.Database.BeginTransactionAsync();
+            try
+            {
+                var knownCount = await RestoreKnownWipedOpeningsAsync(context, receiveType.TransactionTypeId, repairUserId, logger);
+                var negCount = await ZeroUnknownNegativesAsync(context, receiveType.TransactionTypeId, repairUserId, logger);
+                var gapCount = await ReconcileBalanceGapsAsync(
+                    context,
+                    receiveType.TransactionTypeId,
+                    issueType.TransactionTypeId,
+                    repairUserId,
+                    logger);
 
-            await tx.CommitAsync();
-            logger.LogInformation(
-                "ซ่อม ledger เสร็จ: knownOpening={Known}, negZero={Neg}, gapAdjust={Gap}",
-                knownCount, negCount, gapCount);
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            throw;
-        }
+                await tx.CommitAsync();
+                logger.LogInformation(
+                    "ซ่อม ledger เสร็จ: knownOpening={Known}, negZero={Neg}, gapAdjust={Gap}",
+                    knownCount, negCount, gapCount);
+                return true;
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+        });
     }
 
     private static async Task<int> RestoreKnownWipedOpeningsAsync(
