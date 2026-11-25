@@ -872,38 +872,77 @@
 @await Html.PartialAsync("_SmartRestockAnalysisModal")
 <div class="modal fade" id="stockPredictionModal" tabindex="-1" aria-labelledby="stockPredictionModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
+        <div class="modal-content stock-risk-analysis-modal">
             <div class="modal-header">
-                <div>
-                    <h2 class="modal-title fs-5" id="stockPredictionModalTitle">AI Stock Analysis</h2>
+                <div class="stock-risk-analysis-modal__heading">
+                    <span class="dashboard-ai-card__label dashboard-ai-card__label--risk">OUTBOUND / STOCK RISK</span>
+                    <h2 class="modal-title fs-5" id="stockPredictionModalTitle">AI คาดการณ์สินค้าเสี่ยงขาดสต็อก</h2>
                     <p class="stock-prediction-modal__subtitle mb-0" id="stockPredictionModalSubtitle"></p>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="returnToStockActionsButton" hidden>
-                    <i class="bi bi-arrow-left" aria-hidden="true"></i> กลับไปรายการทั้งหมด
-                </button>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                <div class="stock-risk-analysis-modal__actions">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="returnToStockActionsButton" hidden>
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i> กลับไปรายการทั้งหมด
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                </div>
             </div>
-            <div class="modal-body">
-                <div class="stock-prediction-modal__metrics">
+            <div class="modal-body stock-risk-analysis">
+                <section class="stock-risk-analysis__insight" role="status">
+                    <div class="stock-risk-analysis__insight-heading">
+                        <span class="stock-risk-analysis__icon"><i class="bi bi-activity" aria-hidden="true"></i></span>
+                        <div>
+                            <span>ผลประเมินความเสี่ยง</span>
+                            <strong id="predictionModalStatus">กำลังประเมิน</strong>
+                        </div>
+                        <span class="stock-risk-analysis__risk-badge" id="predictionModalRiskBadge">-</span>
+                    </div>
+                    <div class="stock-prediction-modal__recommendation" id="predictionModalRecommendation"></div>
+                    <p class="stock-prediction-modal__reason" id="predictionModalReason"></p>
+                </section>
+
+                <div class="stock-prediction-modal__metrics stock-risk-analysis__metrics">
                     <div><span>คงเหลือ</span><strong id="predictionModalStock">-</strong></div>
                     <div><span>เฉลี่ยจ่ายออก/วัน</span><strong id="predictionModalAverage">-</strong></div>
                     <div><span>คาดว่าจะหมด</span><strong id="predictionModalDays">-</strong></div>
                     <div><span>วันที่คาดการณ์</span><strong id="predictionModalDate">-</strong></div>
-                    <div><span>ความเสี่ยง</span><strong id="predictionModalRisk">-</strong></div>
                     <div><span>แนวโน้ม</span><strong id="predictionModalTrend">-</strong></div>
                 </div>
-                <div class="stock-prediction-modal__section">
-                    <h3>ยอดขายย้อนหลัง 30 วัน</h3>
-                    <p class="stock-prediction-modal__empty" id="predictionHistoryEmpty" hidden>ไม่มีข้อมูลยอดขายย้อนหลังเพียงพอสำหรับแสดงกราฟ</p>
+
+                <section class="stock-risk-analysis__chart-card">
+                    <div class="stock-risk-analysis__section-heading">
+                        <span class="stock-risk-analysis__section-icon"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></span>
+                        <div>
+                            <h3>ยอดขายย้อนหลัง 30 วัน</h3>
+                            <p>ใช้ดูปริมาณจ่ายออกที่นำมาประกอบการคาดการณ์</p>
+                        </div>
+                    </div>
+                    <div class="stock-risk-analysis__empty" id="predictionHistoryEmpty" hidden>
+                        <i class="bi bi-inbox" aria-hidden="true"></i>
+                        <div>
+                            <strong>ยังไม่มีประวัติยอดขายเพียงพอ</strong>
+                            <span>ระบบจะไม่สร้างกราฟหรือแนวโน้มจากข้อมูลที่ไม่มี</span>
+                        </div>
+                    </div>
                     <svg id="predictionHistoryChart" class="stock-prediction-chart" viewBox="0 0 600 190" role="img" aria-label="กราฟยอดขายย้อนหลัง 30 วัน"></svg>
-                </div>
-                <div class="stock-prediction-modal__section">
-                    <h3>แนวโน้มสต็อกตามอัตราจ่ายออกเฉลี่ย</h3>
-                    <p class="stock-prediction-modal__empty" id="predictionForecastEmpty" hidden>ข้อมูลไม่เพียงพอสำหรับการคาดการณ์แนวโน้มสต็อก</p>
+                </section>
+
+                <section class="stock-risk-analysis__chart-card">
+                    <div class="stock-risk-analysis__section-heading">
+                        <span class="stock-risk-analysis__section-icon"><i class="bi bi-graph-down-arrow" aria-hidden="true"></i></span>
+                        <div>
+                            <h3>แนวโน้มสต็อกตามอัตราจ่ายออกเฉลี่ย</h3>
+                            <p>ประมาณการจากสต็อกคงเหลือและยอดจ่ายออกต่อวัน</p>
+                        </div>
+                    </div>
+                    <div class="stock-risk-analysis__empty" id="predictionForecastEmpty" hidden>
+                        <i class="bi bi-clipboard2-data" aria-hidden="true"></i>
+                        <div>
+                            <strong>ยังคาดการณ์แนวโน้มสต็อกไม่ได้</strong>
+                            <span>ต้องมีประวัติยอดขายที่เพียงพอก่อนจึงจะแสดงกราฟได้</span>
+                        </div>
+                    </div>
                     <svg id="predictionForecastChart" class="stock-prediction-chart" viewBox="0 0 600 190" role="img" aria-label="กราฟคาดการณ์สต็อก"></svg>
-                    <p class="stock-prediction-modal__reason" id="predictionModalReason"></p>
-                    <div class="stock-prediction-modal__recommendation" id="predictionModalRecommendation"></div>
-                </div>
+                </section>
             </div>
         </div>
     </div>
@@ -993,6 +1032,8 @@
             var forecastChart = document.getElementById('predictionForecastChart');
             var historyEmpty = document.getElementById('predictionHistoryEmpty');
             var forecastEmpty = document.getElementById('predictionForecastEmpty');
+            var riskBadge = document.getElementById('predictionModalRiskBadge');
+            var riskStatus = document.getElementById('predictionModalStatus');
             var svgNamespace = 'http://www.w3.org/2000/svg';
 
             function createSvgElement(name, attributes, text) {
@@ -1074,9 +1115,26 @@
                 var stock = Number(trigger.dataset.stock) || 0;
                 var unit = trigger.dataset.unit || '';
                 var history = JSON.parse(trigger.dataset.history || '[]');
+                var risk = trigger.dataset.risk || 'ข้อมูลไม่เพียงพอ';
+                var normalizedRisk = risk.toLowerCase();
+                var riskModifier = normalizedRisk.indexOf('วิกฤต') >= 0 || normalizedRisk.indexOf('critical') >= 0
+                    ? 'critical'
+                    : normalizedRisk.indexOf('เสี่ยง') >= 0 || normalizedRisk.indexOf('warning') >= 0
+                        ? 'warning'
+                        : normalizedRisk.indexOf('ปกติ') >= 0 || normalizedRisk.indexOf('normal') >= 0
+                            ? 'normal'
+                            : 'unknown';
+                var riskStatusText = riskModifier === 'critical'
+                    ? 'ควรจัดการเร่งด่วน'
+                    : riskModifier === 'warning'
+                        ? 'ควรเตรียมจัดการ'
+                        : riskModifier === 'normal'
+                            ? 'ยังไม่พบความเสี่ยงเร่งด่วน'
+                            : 'ข้อมูลยังไม่เพียงพอ';
 
-                document.getElementById('stockPredictionModalTitle').textContent = trigger.dataset.sku || '';
-                document.getElementById('stockPredictionModalSubtitle').textContent = trigger.dataset.product || '';
+                document.getElementById('stockPredictionModalSubtitle').textContent =
+                    (trigger.dataset.sku || '') +
+                    (trigger.dataset.product ? ' · ' + trigger.dataset.product : '');
                 document.getElementById('predictionModalStock').textContent = stock.toLocaleString('th-TH') + ' ' + unit;
                 document.getElementById('predictionModalAverage').textContent = historyAvailable
                     ? average.toLocaleString('th-TH', { maximumFractionDigits: 2 }) + ' ' + unit + '/วัน'
@@ -1085,8 +1143,10 @@
                     ? Math.ceil(days).toLocaleString('th-TH') + ' วัน'
                     : 'ยังประเมินไม่ได้';
                 document.getElementById('predictionModalDate').textContent = trigger.dataset.date || 'ยังประเมินไม่ได้';
-                document.getElementById('predictionModalRisk').textContent = trigger.dataset.risk || '';
                 document.getElementById('predictionModalTrend').textContent = trigger.dataset.trend || '';
+                riskStatus.textContent = riskStatusText;
+                riskBadge.textContent = risk;
+                riskBadge.className = 'stock-risk-analysis__risk-badge stock-risk-analysis__risk-badge--' + riskModifier;
                 historyChart.hidden = !historyAvailable;
                 historyEmpty.hidden = historyAvailable;
                 forecastChart.hidden = !historyAvailable;
@@ -1100,7 +1160,10 @@
                 var reason = historyAvailable
                     ? 'คำนวณจากยอดขายในบิลที่เชื่อมกับสต็อกย้อนหลัง ' + (trigger.dataset.window || '90') +
                         ' วัน เปรียบเทียบแนวโน้มกับช่วง 30 วันก่อนหน้า ระดับความเสี่ยง: ' + (trigger.dataset.risk || '') + '.'
-                    : 'ไม่พบประวัติยอดขายในบิลที่เชื่อมกับสต็อกในช่วง 90 วันที่ใช้วิเคราะห์ จึงไม่แสดงค่าคาดการณ์ที่ไม่มีข้อมูลรองรับ.';
+                    : 'ไม่พบประวัติยอดขายในบิลที่เชื่อมกับสต็อกย้อนหลัง 90 วัน จึงไม่แสดงค่าคาดการณ์ที่ไม่มีข้อมูลรองรับ.';
+                if (stock <= 0) {
+                    reason += ' ยอดคงเหลือปัจจุบันเป็น 0 จึงจัดเป็นวิกฤตจากข้อมูลสต็อกจริง แม้ไม่มีประวัติยอดขาย.';
+                }
                 document.getElementById('predictionModalReason').textContent = reason;
                 document.getElementById('predictionModalRecommendation').textContent = trigger.dataset.recommendation || '';
             });
@@ -1186,13 +1249,23 @@
                 var hasInboundHistory = history.some(function (point) {
                     return getPointQuantity(point) > 0;
                 });
+                var priority = trigger.dataset.priority || 'ข้อมูลไม่เพียงพอ';
+                var priorityModifier = priority.indexOf('เร่ง') >= 0
+                    ? 'urgent'
+                    : priority.indexOf('เตรียม') >= 0
+                        ? 'prepare'
+                        : priority.indexOf('เฝ้าระวัง') >= 0
+                            ? 'monitor'
+                            : 'unknown';
 
-                document.getElementById('smartRestockAnalysisModalTitle').textContent =
-                    trigger.dataset.sku || 'AI Smart Restock Analysis';
                 document.getElementById('smartRestockAnalysisModalSubtitle').textContent =
-                    trigger.dataset.product || '';
-                document.getElementById('smartRestockAnalysisPriority').textContent =
-                    trigger.dataset.priority || '';
+                    (trigger.dataset.sku || '') +
+                    (trigger.dataset.product ? ' · ' + trigger.dataset.product : '');
+                document.getElementById('smartRestockAnalysisPriority').textContent = priority;
+                var priorityBadge = document.getElementById('smartRestockAnalysisPriorityBadge');
+                priorityBadge.textContent = priority;
+                priorityBadge.className =
+                    'smart-restock-analysis__priority-badge smart-restock-analysis__priority-badge--' + priorityModifier;
                 document.getElementById('smartRestockAnalysisReason').textContent =
                     trigger.dataset.decisionReason || '';
                 document.getElementById('smartRestockAnalysisStock').textContent =
