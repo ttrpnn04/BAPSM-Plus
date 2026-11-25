@@ -444,13 +444,18 @@
 
             <div class="row g-3 mt-1">
                 <div class="col-xl-6">
-                    <div class="chart-card dashboard-bottom-card h-100">
+                    <div class="chart-card dashboard-bottom-card dashboard-simulation-card h-100">
                         <div class="chart-card__header">
-                            <div>
-                                <h2>What-if Simulation</h2>
-                                <p>จำลองเติมได้สูงสุดเท่ายอดจ่ายออก 30 วัน แล้วดูจำนวนวันที่พอใช้</p>
+                            <div class="dashboard-simulation-card__heading">
+                                <span class="dashboard-simulation-card__icon"><i class="bi bi-sliders2"></i></span>
+                                <div>
+                                    <h2>What-if Simulation</h2>
+                                    <p>ทดลองปรับจำนวนเติม แล้วดูสต็อกที่คาดว่าจะครอบคลุม</p>
+                                </div>
                             </div>
-                            <span class="dashboard-bottom-card__badge dashboard-bottom-card__badge--simulation">จำลอง</span>
+                            <span class="dashboard-bottom-card__badge dashboard-bottom-card__badge--simulation">
+                                <i class="bi bi-stars"></i> จำลอง
+                            </span>
                         </div>
 
                         @if (Model.TopUsedProducts.Count == 0)
@@ -460,61 +465,91 @@
                         else
                         {
                             var initialProduct = Model.TopUsedProducts[0];
-                            var initialScenarioStock = (long)initialProduct.CurrentStock + initialProduct.UsedQuantity;
+                            var maxScenarioQuantity = Math.Max(initialProduct.UsedQuantity, 1);
+                            var initialScenarioQuantity = Math.Max((int)Math.Ceiling(maxScenarioQuantity / 2d), 1);
+                            var initialScenarioStock = (long)initialProduct.CurrentStock + initialScenarioQuantity;
                             var initialCoverageDays = (long)Math.Floor(initialScenarioStock * 30d / initialProduct.UsedQuantity);
 
                             <div class="dashboard-simulation" data-dashboard-simulation>
-                                <label class="dashboard-simulation__label" for="dashboardSimulationProduct">สินค้า</label>
-                                <select id="dashboardSimulationProduct" class="form-select form-select-sm" data-simulation-product>
-                                    @for (var index = 0; index < Model.TopUsedProducts.Count; index++)
-                                    {
-                                        var item = Model.TopUsedProducts[index];
-                                        <option value="@index"
-                                                data-stock="@item.CurrentStock"
-                                                data-usage="@item.UsedQuantity"
-                                                data-unit="@item.Unit"
-                                                data-max="@Math.Max(item.UsedQuantity, 1)"
-                                                selected="@(index == 0 ? "selected" : null)">
-                                            @item.ProductName (@item.Sku)
-                                        </option>
-                                    }
-                                </select>
+                                <div class="dashboard-simulation__product">
+                                    <span class="dashboard-simulation__product-icon"><i class="bi bi-box-seam"></i></span>
+                                    <div class="dashboard-simulation__product-control">
+                                        <label class="dashboard-simulation__label" for="dashboardSimulationProduct">เลือกสินค้า</label>
+                                        <select id="dashboardSimulationProduct"
+                                                class="form-select form-select-sm dashboard-simulation__select"
+                                                data-simulation-product>
+                                            @for (var index = 0; index < Model.TopUsedProducts.Count; index++)
+                                            {
+                                                var item = Model.TopUsedProducts[index];
+                                                <option value="@index"
+                                                        data-stock="@item.CurrentStock"
+                                                        data-usage="@item.UsedQuantity"
+                                                        data-unit="@item.Unit"
+                                                        data-max="@Math.Max(item.UsedQuantity, 1)"
+                                                        selected="@(index == 0 ? "selected" : null)">
+                                                    @item.ProductName (@item.Sku)
+                                                </option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
 
                                 <div class="dashboard-simulation__range">
-                                    <label class="dashboard-simulation__label" for="dashboardSimulationQuantity">
-                                        จำนวนที่จำลองเติม:
-                                        <output data-simulation-quantity>@initialProduct.UsedQuantity.ToString("N0")</output>
-                                        <span data-simulation-unit>@initialProduct.Unit</span>
-                                    </label>
+                                    <div class="dashboard-simulation__range-heading">
+                                        <div>
+                                            <label class="dashboard-simulation__label" for="dashboardSimulationQuantity">จำนวนที่จำลองเติม</label>
+                                            <span class="dashboard-simulation__range-hint">ปรับได้สูงสุดเท่ายอดจ่ายออก 30 วัน</span>
+                                        </div>
+                                        <div class="dashboard-simulation__quantity-badge">
+                                            <output data-simulation-quantity>@initialScenarioQuantity.ToString("N0")</output>
+                                            <span data-simulation-unit>@initialProduct.Unit</span>
+                                        </div>
+                                    </div>
                                     <input id="dashboardSimulationQuantity"
                                            class="form-range"
                                            type="range"
                                            min="0"
-                                           max="@Math.Max(initialProduct.UsedQuantity, 1)"
-                                           value="@initialProduct.UsedQuantity"
+                                           max="@maxScenarioQuantity"
+                                           value="@initialScenarioQuantity"
                                            data-simulation-range />
                                     <div class="dashboard-simulation__range-labels">
                                         <span>0</span>
-                                        <span>@Math.Max(initialProduct.UsedQuantity, 1).ToString("N0") @initialProduct.Unit</span>
+                                        <span data-simulation-max-label>@maxScenarioQuantity.ToString("N0") @initialProduct.Unit</span>
                                     </div>
                                 </div>
 
-                                <div class="dashboard-simulation__results">
-                                    <div>
-                                        <span>คงเหลือปัจจุบัน</span>
-                                        <strong data-simulation-current>@initialProduct.CurrentStock.ToString("N0")</strong>
+                                <div class="dashboard-simulation__results" aria-live="polite">
+                                    <div class="dashboard-simulation__metric">
+                                        <span class="dashboard-simulation__metric-icon dashboard-simulation__metric-icon--stock">
+                                            <i class="bi bi-boxes"></i>
+                                        </span>
+                                        <span class="dashboard-simulation__metric-label">คงเหลือปัจจุบัน</span>
+                                        <strong>
+                                            <span data-simulation-current>@initialProduct.CurrentStock.ToString("N0")</span>
+                                            <small data-simulation-current-unit>@initialProduct.Unit</small>
+                                        </strong>
                                     </div>
-                                    <div>
-                                        <span>หลังเติมจำลอง</span>
-                                        <strong data-simulation-stock>@initialScenarioStock.ToString("N0")</strong>
+                                    <div class="dashboard-simulation__metric">
+                                        <span class="dashboard-simulation__metric-icon dashboard-simulation__metric-icon--scenario">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </span>
+                                        <span class="dashboard-simulation__metric-label">หลังเติมจำลอง</span>
+                                        <strong>
+                                            <span data-simulation-stock>@initialScenarioStock.ToString("N0")</span>
+                                            <small data-simulation-stock-unit>@initialProduct.Unit</small>
+                                        </strong>
                                     </div>
-                                    <div class="dashboard-simulation__coverage">
-                                        <span>คาดการณ์ว่าพอใช้</span>
+                                    <div class="dashboard-simulation__metric dashboard-simulation__metric--coverage">
+                                        <span class="dashboard-simulation__metric-icon dashboard-simulation__metric-icon--coverage">
+                                            <i class="bi bi-clock-history"></i>
+                                        </span>
+                                        <span class="dashboard-simulation__metric-label">คาดการณ์ว่าพอใช้</span>
                                         <strong data-simulation-coverage>@initialCoverageDays.ToString("N0") วัน</strong>
                                     </div>
                                 </div>
                                 <p class="dashboard-simulation__note">
-                                    คำนวณจากยอดจ่ายออก 30 วันล่าสุด ไม่รวมราคาทุน และไม่ใช่การรับประกันการใช้จริง
+                                    <i class="bi bi-info-circle"></i>
+                                    อิงยอดจ่ายออก 30 วันล่าสุด ไม่รวมราคาทุน และไม่ใช่การรับประกันการใช้จริง
                                 </p>
                             </div>
                         }
@@ -572,9 +607,11 @@
             var quantityOutput = simulation.querySelector('[data-simulation-quantity]');
             var unitOutput = simulation.querySelector('[data-simulation-unit]');
             var currentStockOutput = simulation.querySelector('[data-simulation-current]');
+            var currentStockUnitOutput = simulation.querySelector('[data-simulation-current-unit]');
             var simulatedStockOutput = simulation.querySelector('[data-simulation-stock]');
+            var simulatedStockUnitOutput = simulation.querySelector('[data-simulation-stock-unit]');
             var coverageOutput = simulation.querySelector('[data-simulation-coverage]');
-            var rangeMaxLabel = simulation.querySelector('.dashboard-simulation__range-labels span:last-child');
+            var rangeMaxLabel = simulation.querySelector('[data-simulation-max-label]');
 
             function formatQuantity(value) {
                 return Number(value).toLocaleString('th-TH');
@@ -589,13 +626,14 @@
 
                 quantityRange.max = String(maxQuantity);
                 if (resetQuantity) {
-                    quantityRange.value = String(maxQuantity);
+                    quantityRange.value = String(Math.max(Math.ceil(maxQuantity / 2), 1));
                 } else if (Number(quantityRange.value) > maxQuantity) {
                     quantityRange.value = String(maxQuantity);
                 }
 
                 var additionalQuantity = Number(quantityRange.value) || 0;
                 var simulatedStock = currentStock + additionalQuantity;
+                var rangeProgress = maxQuantity > 0 ? additionalQuantity * 100 / maxQuantity : 0;
                 var coverageDays = recentUsage > 0
                     ? Math.floor(simulatedStock * 30 / recentUsage)
                     : 0;
@@ -603,9 +641,12 @@
                 quantityOutput.textContent = formatQuantity(additionalQuantity);
                 unitOutput.textContent = unit;
                 currentStockOutput.textContent = formatQuantity(currentStock);
+                currentStockUnitOutput.textContent = unit;
                 simulatedStockOutput.textContent = formatQuantity(simulatedStock);
+                simulatedStockUnitOutput.textContent = unit;
                 coverageOutput.textContent = formatQuantity(coverageDays) + ' วัน';
                 rangeMaxLabel.textContent = formatQuantity(maxQuantity) + ' ' + unit;
+                quantityRange.style.setProperty('--range-progress', rangeProgress + '%');
             }
 
             productSelect.addEventListener('change', function () {

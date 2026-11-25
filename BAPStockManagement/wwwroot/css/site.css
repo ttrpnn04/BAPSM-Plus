@@ -1466,26 +1466,219 @@ code {
   color: var(--success);
 }
 
+.dashboard-simulation-card {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
+  background: linear-gradient(145deg, var(--surface) 30%, color-mix(in srgb, var(--primary-soft) 45%, var(--surface)));
+}
+
+.dashboard-simulation-card::before {
+  position: absolute;
+  top: -6rem;
+  right: -3rem;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 12%, transparent), transparent 70%);
+  content: "";
+  pointer-events: none;
+}
+
+.dashboard-simulation-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-simulation-card .chart-card__header {
+  align-items: center;
+  margin-bottom: 1.1rem;
+}
+
+.dashboard-simulation-card .chart-card__header h2 {
+  font-size: 1.02rem;
+}
+
+.dashboard-simulation-card__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.dashboard-simulation-card__icon {
+  display: grid;
+  width: 2.7rem;
+  height: 2.7rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.85rem;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--primary) 24%, transparent);
+  color: #fff;
+  font-size: 1.15rem;
+}
+
+.dashboard-bottom-card__badge--simulation {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--primary) 8%, transparent);
+  white-space: nowrap;
+}
+
 .dashboard-simulation__label {
   display: block;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.2rem;
   color: var(--text-2);
   font-size: 0.72rem;
   font-weight: 600;
 }
 
+.dashboard-simulation__product {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border-light);
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.dashboard-simulation__product:focus-within {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.dashboard-simulation__product-icon {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 1rem;
+}
+
+.dashboard-simulation__product-control {
+  min-width: 0;
+}
+
+.dashboard-simulation__select.form-select {
+  min-height: 1.65rem;
+  padding: 0 1.6rem 0 0;
+  border: 0;
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .dashboard-simulation__range {
-  margin-top: 1rem;
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.9rem 0.55rem;
+  border: 1px solid var(--border-light);
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.dashboard-simulation__range-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.dashboard-simulation__range-heading .dashboard-simulation__label {
+  margin: 0;
+}
+
+.dashboard-simulation__range-hint {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--text-3);
+  font-size: 0.64rem;
+}
+
+.dashboard-simulation__quantity-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
+  border-radius: 0.65rem;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.dashboard-simulation__quantity-badge output {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.dashboard-simulation__quantity-badge span {
+  font-size: 0.65rem;
+  font-weight: 600;
 }
 
 .dashboard-simulation__range .form-range {
   margin-bottom: 0;
+  cursor: pointer;
   accent-color: var(--primary);
+}
+
+.dashboard-simulation__range .form-range::-webkit-slider-runnable-track {
+  height: 0.42rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--primary) 0 var(--range-progress, 50%),
+    #E6EAF1 var(--range-progress, 50%) 100%
+  );
+}
+
+.dashboard-simulation__range .form-range::-webkit-slider-thumb {
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.29rem;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 2px 7px color-mix(in srgb, var(--primary) 35%, transparent);
+  appearance: none;
+}
+
+.dashboard-simulation__range .form-range::-moz-range-track {
+  height: 0.42rem;
+  border-radius: 999px;
+  background: #E6EAF1;
+}
+
+.dashboard-simulation__range .form-range::-moz-range-progress {
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+.dashboard-simulation__range .form-range::-moz-range-thumb {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 2px 7px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
 .dashboard-simulation__range-labels {
   display: flex;
   justify-content: space-between;
+  margin-top: 0.1rem;
   color: var(--text-3);
   font-size: 0.65rem;
 }
@@ -1493,41 +1686,99 @@ code {
 .dashboard-simulation__results {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
 }
 
-.dashboard-simulation__results > div {
-  display: flex;
-  flex-direction: column;
+.dashboard-simulation__metric {
+  display: grid;
+  grid-template-columns: 1.9rem minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.5rem;
   min-width: 0;
-  padding: 0.65rem 0.55rem;
-  border-radius: var(--radius-sm);
-  background: var(--bg);
+  padding: 0.65rem;
+  border: 1px solid var(--border-light);
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
 }
 
-.dashboard-simulation__results span {
+.dashboard-simulation__metric-icon {
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  grid-row: 1 / span 2;
+  place-items: center;
+  border-radius: 0.65rem;
+  font-size: 0.85rem;
+}
+
+.dashboard-simulation__metric-icon--stock {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.dashboard-simulation__metric-icon--scenario {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.dashboard-simulation__metric-icon--coverage {
+  background: color-mix(in srgb, var(--success) 14%, #fff);
+  color: var(--success);
+}
+
+.dashboard-simulation__metric-label {
+  overflow: hidden;
   color: var(--text-3);
   font-size: 0.65rem;
-}
-
-.dashboard-simulation__results strong {
-  overflow: hidden;
-  color: var(--text);
-  font-size: 0.9rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dashboard-simulation__results .dashboard-simulation__coverage {
-  background: var(--success-soft);
+.dashboard-simulation__metric strong {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
-.dashboard-simulation__coverage strong {
+.dashboard-simulation__metric strong small {
+  overflow: hidden;
+  color: var(--text-3);
+  font-size: 0.6rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+
+.dashboard-simulation__metric--coverage {
+  border-color: color-mix(in srgb, var(--success) 18%, var(--border-light));
+  background: linear-gradient(135deg, var(--success-soft), color-mix(in srgb, var(--success-soft) 45%, #fff));
+}
+
+.dashboard-simulation__metric--coverage strong {
   color: var(--success);
+  font-size: 1rem;
 }
 
-.dashboard-simulation__note,
+.dashboard-simulation__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0.6rem 0 0;
+  color: var(--text-3);
+  font-size: 0.63rem;
+}
+
+.dashboard-simulation__note i {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+  color: var(--primary);
+}
+
 .dashboard-insight-disclaimer {
   margin: 0.65rem 0 0;
   color: var(--text-3);
@@ -1807,7 +2058,7 @@ code {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .dashboard-simulation__results .dashboard-simulation__coverage {
+  .dashboard-simulation__metric--coverage {
     grid-column: 1 / -1;
   }
 
