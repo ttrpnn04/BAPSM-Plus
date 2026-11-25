@@ -40,6 +40,18 @@ public class HomeDashboardViewModel
 
     public IReadOnlyList<StockAlertItem> LowStockItems { get; set; } = [];
 
+    public IReadOnlyList<StockPredictionViewModel> StockPredictions { get; set; } = [];
+
+    public IReadOnlyList<StockPredictionViewModel> StockActionItems { get; set; } = [];
+
+    public int StockAnalysisCount { get; set; }
+
+    public int CriticalPredictionCount { get; set; }
+
+    public int StockoutWithinSevenDaysCount { get; set; }
+
+    public int IncreasingSalesTrendCount { get; set; }
+
     public IReadOnlyList<StockAlertItem> OutOfStockItems { get; set; } = [];
 }
 

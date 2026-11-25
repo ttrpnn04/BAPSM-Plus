@@ -16,6 +16,7 @@ builder.Services.Configure<BillingOptions>(
 
 builder.Services.AddScoped<BAPStockManagement.Services.SaleBillService>();
 builder.Services.AddScoped<BAPStockManagement.Services.SaleBillExcelExporter>();
+builder.Services.AddScoped<BAPStockManagement.Services.StockPredictionService>();
 
 builder.Services.AddControllersWithViews();
 

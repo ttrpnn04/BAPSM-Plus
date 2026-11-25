@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BAPStockManagement.Models;
+using BAPStockManagement.Services;
 
 namespace BAPStockManagement.Controllers;
 
@@ -12,10 +13,12 @@ namespace BAPStockManagement.Controllers;
 public class HomeController : Controller
 {
     private readonly BAPStockContext _context;
+    private readonly StockPredictionService _stockPredictionService;
 
-    public HomeController(BAPStockContext context)
+    public HomeController(BAPStockContext context, StockPredictionService stockPredictionService)
     {
         _context = context;
+        _stockPredictionService = stockPredictionService;
     }
 
     public async Task<IActionResult> Index()
@@ -31,6 +34,7 @@ public class HomeController : Controller
                 .ThenInclude(v => v.StockBalance)
             .Where(p => p.IsActive && p.Category.IsActive)
             .ToListAsync();
+        var stockPredictions = await _stockPredictionService.GetPredictionsAsync(products, today);
 
         var productStockRows = products
             .Select(p =>
@@ -51,6 +55,27 @@ public class HomeController : Controller
             })
             .ToList();
         var productStockById = productStockRows.ToDictionary(r => r.ProductId);
+        var lowStockProductIds = productStockRows
+            .Where(row => StockThresholds.IsLowStock(row.QtyPieces, row.QtyCases))
+            .Select(row => row.ProductId)
+            .ToHashSet();
+        foreach (var prediction in stockPredictions)
+        {
+            prediction.IsLowStock = lowStockProductIds.Contains(prediction.ProductId);
+        }
+        var stockActionItems = stockPredictions
+            .Where(prediction =>
+                prediction.IsLowStock ||
+                prediction.RiskLevel is StockRiskLevel.Critical or StockRiskLevel.Warning)
+            .OrderBy(prediction => prediction.RiskLevel switch
+            {
+                StockRiskLevel.Critical => 0,
+                StockRiskLevel.Warning => 1,
+                _ => 2
+            })
+            .ThenBy(prediction => prediction.DaysUntilStockout ?? decimal.MaxValue)
+            .ThenBy(prediction => prediction.ProductName)
+            .ToList();
 
         var lowStockItems = productStockRows
             .Where(r => StockThresholds.IsLowStock(r.QtyPieces, r.QtyCases))
@@ -346,6 +371,13 @@ public class HomeController : Controller
             StockInsights = stockInsights,
             StockInsightRecommendation = stockInsightRecommendation,
             LowStockItems = lowStockItems,
+            StockPredictions = stockPredictions,
+            StockActionItems = stockActionItems,
+            StockAnalysisCount = stockPredictions.Count,
+            CriticalPredictionCount = stockPredictions.Count(prediction => prediction.RiskLevel == StockRiskLevel.Critical),
+            StockoutWithinSevenDaysCount = stockPredictions.Count(prediction =>
+                prediction.DaysUntilStockout.HasValue && prediction.DaysUntilStockout <= 7),
+            IncreasingSalesTrendCount = stockPredictions.Count(prediction => prediction.SalesTrend == StockSalesTrend.Increasing),
             OutOfStockItems = outOfStockItems
         });
     }

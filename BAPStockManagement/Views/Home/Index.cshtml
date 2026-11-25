@@ -220,17 +220,59 @@
                 <h1>ภาพรวมสินค้าและสต็อก</h1>
                 <p>สรุปจำนวนสินค้า สถานะคงเหลือ และความเคลื่อนไหวล่าสุด</p>
             </div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-xl-6">
-                    <div class="chart-card dashboard-insight-card h-100">
-                        <div class="chart-card__header">
-                            <div>
-                                <h2>Top 5 สินค้าที่มีการใช้มากที่สุด</h2>
-                                <p>ยอดจ่ายออกย้อนหลัง 30 วัน พร้อมเทียบ 30 วันก่อนหน้า</p>
-                            </div>
-                            <i class="bi bi-graph-up-arrow"></i>
+            <div class="row g-3 mb-3">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-primary h-100 dashboard-ai-summary">
+                        <div>
+                            <div class="stat-label">AI วิเคราะห์สินค้า</div>
+                            <div class="stat-value">@Model.StockAnalysisCount.ToString("N0")</div>
+                            <div class="stat-sub">รายการจากสต็อกที่ใช้งาน</div>
                         </div>
+                        <div class="stat-icon"><i class="bi bi-robot"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-danger h-100 dashboard-ai-summary">
+                        <div>
+                            <div class="stat-label">เสี่ยงสูง / หมดสต็อก</div>
+                            <div class="stat-value">@Model.CriticalPredictionCount.ToString("N0")</div>
+                            <div class="stat-sub">คาดว่าจะหมดภายใน 3 วัน</div>
+                            <a class="dashboard-ai-summary__link" href="#dashboard-ai-alerts">ตรวจสอบสินค้าที่มีความเสี่ยง</a>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-exclamation-octagon"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-warning h-100 dashboard-ai-summary">
+                        <div>
+                            <div class="stat-label">คาดว่าจะหมดใน 7 วัน</div>
+                            <div class="stat-value">@Model.StockoutWithinSevenDaysCount.ToString("N0")</div>
+                            <div class="stat-sub">อ้างอิงยอดจ่ายออกย้อนหลัง</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-success h-100 dashboard-ai-summary">
+                        <div>
+                            <div class="stat-label">แนวโน้มจ่ายออกเพิ่มขึ้น</div>
+                            <div class="stat-value">@Model.IncreasingSalesTrendCount.ToString("N0")</div>
+                            <div class="stat-sub">เทียบ 30 วันล่าสุดกับช่วงก่อน</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="dashboard-grid mb-4">
+                <div class="chart-card dashboard-insight-card dashboard-card">
+                    <div class="chart-card__header">
+                        <div>
+                            <h2>Top 5 สินค้าที่มีการใช้มากที่สุด</h2>
+                            <p>ยอดจ่ายออกย้อนหลัง 30 วัน พร้อมเทียบ 30 วันก่อนหน้า</p>
+                        </div>
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div class="dashboard-card__content">
                         @if (Model.TopUsedProducts.Count == 0)
                         {
                             <div class="chart-empty">ยังไม่มีรายการจ่ายออกในช่วง 30 วันที่ผ่านมา</div>
@@ -295,44 +337,163 @@
                             </div>
                         }
                     </div>
+                    <div class="dashboard-card__footer">
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#topUsedDetailsModal">
+                            <i class="bi bi-clipboard-data" aria-hidden="true"></i> ดูรายละเอียดเพิ่มเติม
+                        </button>
+                    </div>
                 </div>
 
-                <div class="col-xl-6">
-                    <div class="chart-card dashboard-insight-card h-100">
-                        <div class="chart-card__header">
-                            <div>
-                                <h2>สินค้าที่ต้องดำเนินการด่วน</h2>
-                                <p>สินค้าใกล้หมด เรียงตามจำนวนคงเหลือน้อยที่สุด</p>
-                            </div>
-                            <span class="dashboard-urgent-count">@Model.LowStockProductCount.ToString("N0") รายการ</span>
+                <div id="dashboard-ai-alerts" class="chart-card dashboard-insight-card dashboard-card">
+                    <div class="chart-card__header">
+                        <div>
+                            <h2>AI คาดการณ์สินค้าเสี่ยงขาดสต็อก</h2>
+                            <p>ใช้ยอดขายจากบิลที่เชื่อมกับสต็อกย้อนหลังสูงสุด 90 วัน</p>
                         </div>
-                        @if (Model.LowStockItems.Count == 0)
+                        <span class="dashboard-urgent-count">@Model.StockActionItems.Count.ToString("N0") รายการ</span>
+                    </div>
+                    <div class="dashboard-card__content">
+                        @if (Model.StockActionItems.Count == 0)
                         {
-                            <div class="chart-empty">ไม่มีสินค้าใกล้หมดตามเกณฑ์ในขณะนี้</div>
+                            <div class="chart-empty">ยังไม่มีสินค้าเข้าเกณฑ์เสี่ยงหรือใกล้หมดในขณะนี้</div>
                         }
                         else
                         {
                             <div class="dashboard-urgent-list">
-                                @foreach (var item in Model.LowStockItems.Take(4))
+                                @for (var index = 0; index < Model.StockActionItems.Count; index++)
                                 {
-                                    var usesPieces = item.QtyPieces > 0;
-                                    var urgentQuantity = usesPieces ? item.QtyPieces : item.QtyCases;
-                                    var alertUnit = BAPStockManagement.Constants.ProductUnits.Normalize(item.Unit);
+                                    var item = Model.StockActionItems[index];
+                                    var riskLabel = item.RiskLevel switch
+                                    {
+                                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical => "วิกฤต",
+                                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "เสี่ยง",
+                                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "ปกติ",
+                                        _ => "ข้อมูลไม่พอ"
+                                    };
+                                    var riskClass = item.RiskLevel switch
+                                    {
+                                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical => "dashboard-urgent-product__badge--critical",
+                                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "dashboard-urgent-product__badge--warning",
+                                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "dashboard-urgent-product__badge--normal",
+                                        _ => "dashboard-urgent-product__badge--unknown"
+                                    };
+                                    var trendLabel = item.SalesTrend switch
+                                    {
+                                        BAPStockManagement.ViewModels.Home.StockSalesTrend.Increasing => "เพิ่มขึ้น",
+                                        BAPStockManagement.ViewModels.Home.StockSalesTrend.Decreasing => "ลดลง",
+                                        BAPStockManagement.ViewModels.Home.StockSalesTrend.Stable => "ทรงตัว",
+                                        _ => "ข้อมูลไม่พอ"
+                                    };
 
-                                    <div class="dashboard-urgent-product">
+                                    <div class="dashboard-urgent-product dashboard-ai-product"
+                                         data-stock-page-item
+                                         hidden="@(index >= 3 ? "hidden" : null)">
                                         <span class="dashboard-urgent-product__icon"><i class="bi bi-box-seam"></i></span>
                                         <div class="dashboard-urgent-product__name">
                                             <strong>@item.Sku</strong>
                                             <span>@item.ProductName</span>
                                         </div>
                                         <div class="dashboard-urgent-product__stock">
-                                            <strong>@urgentQuantity.ToString("N0") @alertUnit</strong>
-                                            <span>เกณฑ์เตือน ≤ @BAPStockManagement.Constants.StockThresholds.LowStockLimit @alertUnit</span>
+                                            <strong>คงเหลือ @item.CurrentStock.ToString("N0") @item.Unit</strong>
+                                            <span>
+                                                @if (item.AverageDailySales.HasValue)
+                                                {
+                                                    <text>เฉลี่ยขาย @item.AverageDailySales.Value.ToString("0.##") @item.Unit/วัน · แนวโน้ม@trendLabel</text>
+                                                }
+                                                else
+                                                {
+                                                    <text>ข้อมูลไม่เพียงพอสำหรับการคาดการณ์</text>
+                                                }
+                                            </span>
                                         </div>
-                                        <span class="dashboard-urgent-product__badge">ใกล้หมด</span>
+                                        <span class="dashboard-urgent-product__badge @riskClass">@riskLabel</span>
+                                        <div class="dashboard-ai-product__forecast">
+                                            @if (item.DaysUntilStockout.HasValue)
+                                            {
+                                                <span>คาดว่าจะหมดใน @Math.Ceiling(item.DaysUntilStockout.Value).ToString("N0") วัน</span>
+                                                @if (item.EstimatedStockoutDate.HasValue)
+                                                {
+                                                    <span>ประมาณ @item.EstimatedStockoutDate.Value.ToString("dd/MM/yyyy")</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span>ยังไม่สามารถระบุวันหมดสต็อกได้</span>
+                                            }
+                                            @if (item.IsLowStock)
+                                            {
+                                                <span>เข้าเกณฑ์ใกล้หมดเดิม (≤ @BAPStockManagement.Constants.StockThresholds.LowStockLimit @item.Unit)</span>
+                                            }
+                                        </div>
+                                        <p class="dashboard-ai-product__recommendation" title="@item.Recommendation">@item.Recommendation</p>
+                                        <div class="dashboard-ai-product__actions">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#stockPredictionModal"
+                                                    data-sku="@item.Sku"
+                                                    data-product="@item.ProductName"
+                                                    data-stock="@item.CurrentStock"
+                                                    data-unit="@item.Unit"
+                                                    data-average="@(item.AverageDailySales?.ToString("0.##") ?? string.Empty)"
+                                                    data-days="@(item.DaysUntilStockout?.ToString("0.##") ?? string.Empty)"
+                                                    data-date="@(item.EstimatedStockoutDate?.ToString("dd/MM/yyyy") ?? string.Empty)"
+                                                    data-risk="@riskLabel"
+                                                    data-trend="@trendLabel"
+                                                    data-window="@(item.AnalysisWindowDays?.ToString() ?? string.Empty)"
+                                                    data-history-available="@item.AnalysisWindowDays.HasValue.ToString().ToLowerInvariant()"
+                                                    data-recommendation="@item.Recommendation"
+                                                    data-history="@System.Text.Json.JsonSerializer.Serialize(item.SalesHistory)">
+                                                <i class="bi bi-clipboard-data" aria-hidden="true"></i> ดูรายละเอียดการวิเคราะห์
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#stockPredictionModal"
+                                                    data-sku="@item.Sku"
+                                                    data-product="@item.ProductName"
+                                                    data-stock="@item.CurrentStock"
+                                                    data-unit="@item.Unit"
+                                                    data-average="@(item.AverageDailySales?.ToString("0.##") ?? string.Empty)"
+                                                    data-days="@(item.DaysUntilStockout?.ToString("0.##") ?? string.Empty)"
+                                                    data-date="@(item.EstimatedStockoutDate?.ToString("dd/MM/yyyy") ?? string.Empty)"
+                                                    data-risk="@riskLabel"
+                                                    data-trend="@trendLabel"
+                                                    data-window="@(item.AnalysisWindowDays?.ToString() ?? string.Empty)"
+                                                    data-history-available="@item.AnalysisWindowDays.HasValue.ToString().ToLowerInvariant()"
+                                                    data-recommendation="@item.Recommendation"
+                                                    data-history="@System.Text.Json.JsonSerializer.Serialize(item.SalesHistory)">
+                                                <i class="bi bi-graph-up" aria-hidden="true"></i> ดูกราฟแนวโน้ม
+                                            </button>
+                                        </div>
                                     </div>
                                 }
                             </div>
+                            <p class="dashboard-ai-disclaimer">การคาดการณ์เป็นสถิติจากรายการจ่ายออกในระบบ ไม่ใช่โมเดล Machine Learning และไม่รวมหน่วยที่แปลงกันไม่ได้</p>
+                        }
+                    </div>
+                    <div class="dashboard-card__footer dashboard-ai-card__footer">
+                        @if (Model.StockActionItems.Count > 3)
+                        {
+                            <nav class="dashboard-ai-pagination" aria-label="หน้ารายการสินค้าเสี่ยง">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-stock-page-prev aria-label="รายการก่อนหน้า" disabled>
+                                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                                </button>
+                                <span data-stock-page-label>1–@Math.Min(3, Model.StockActionItems.Count) / @Model.StockActionItems.Count</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-stock-page-next aria-label="รายการถัดไป">
+                                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                                </button>
+                            </nav>
+                        }
+                        @if (Model.StockActionItems.Count == 0)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled>ไม่มีรายการเสี่ยง</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#stockActionsModal">
+                                <i class="bi bi-list-ul" aria-hidden="true"></i> ดูสินค้าทั้งหมด (@Model.StockActionItems.Count.ToString("N0") รายการ)
+                            </button>
                         }
                     </div>
                 </div>
@@ -592,11 +753,397 @@
         <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="1" aria-label="หน้า 2"></button>
     </div>
 </div>
+<div class="modal fade" id="topUsedDetailsModal" tabindex="-1" aria-labelledby="topUsedDetailsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title fs-5" id="topUsedDetailsModalTitle">รายละเอียด Top 5 สินค้าที่มีการใช้มากที่สุด</h2>
+                    <p class="stock-prediction-modal__subtitle mb-0">ยอดจ่ายออกย้อนหลัง 30 วัน แบ่งตามช่วงละ 5 วัน</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
+                @if (Model.TopUsedProducts.Count == 0)
+                {
+                    <div class="chart-empty">ยังไม่มีรายการจ่ายออกในช่วง 30 วันที่ผ่านมา</div>
+                }
+                else
+                {
+                    <div class="dashboard-top-details">
+                        @foreach (var item in Model.TopUsedProducts)
+                        {
+                            var maxBucket = Math.Max(item.TrendBuckets.DefaultIfEmpty(0).Max(), 1);
+                            var changeValue = item.ChangePercent.GetValueOrDefault();
+                            var changeLabel = !item.HasPreviousPeriodUsage
+                                ? "ไม่มีข้อมูลช่วงก่อนหน้า"
+                                : changeValue > 0
+                                    ? $"เพิ่มขึ้น {changeValue:N0}%"
+                                    : changeValue < 0
+                                        ? $"ลดลง {Math.Abs(changeValue):N0}%"
+                                        : "ทรงตัว";
+
+                            <article class="dashboard-top-details__item">
+                                <div class="dashboard-top-details__header">
+                                    <div>
+                                        <strong>@item.Sku</strong>
+                                        <span>@item.ProductName</span>
+                                    </div>
+                                    <span>@changeLabel</span>
+                                </div>
+                                <div class="dashboard-top-details__metrics">
+                                    <span>จ่ายออก 30 วัน <strong>@item.UsedQuantity.ToString("N0") @item.Unit</strong></span>
+                                    <span>คงเหลือ <strong>@item.CurrentStock.ToString("N0") @item.Unit</strong></span>
+                                </div>
+                                <div class="dashboard-top-details__buckets">
+                                    @for (var index = 0; index < item.TrendBuckets.Count; index++)
+                                    {
+                                        var quantity = item.TrendBuckets[index];
+                                        var height = Math.Max(quantity * 100d / maxBucket, quantity > 0 ? 8 : 0);
+                                        <div class="dashboard-top-details__bucket">
+                                            <div class="dashboard-top-details__bar" title="@quantity.ToString("N0") @item.Unit">
+                                                <span style="height: @height.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                                            </div>
+                                            <strong>@quantity.ToString("N0")</strong>
+                                            <small>วันที่ @(index * 5 + 1)-@Math.Min((index + 1) * 5, 30)</small>
+                                        </div>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="stockActionsModal" tabindex="-1" aria-labelledby="stockActionsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title fs-5" id="stockActionsModalTitle">สินค้าทั้งหมดที่ต้องติดตาม</h2>
+                    <p class="stock-prediction-modal__subtitle mb-0">@Model.StockActionItems.Count.ToString("N0") รายการ จากข้อมูลสต็อกและยอดขายจริง</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
+                @if (Model.StockActionItems.Count == 0)
+                {
+                    <div class="chart-empty">ยังไม่มีสินค้าเข้าเกณฑ์เสี่ยงหรือใกล้หมดในขณะนี้</div>
+                }
+                else
+                {
+                    <div class="dashboard-ai-modal-list">
+                        @foreach (var item in Model.StockActionItems)
+                        {
+                            var riskLabel = item.RiskLevel switch
+                            {
+                                BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical => "วิกฤต",
+                                BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "เสี่ยง",
+                                BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "ปกติ",
+                                _ => "ข้อมูลไม่พอ"
+                            };
+                            var riskClass = item.RiskLevel switch
+                            {
+                                BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical => "dashboard-urgent-product__badge--critical",
+                                BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "dashboard-urgent-product__badge--warning",
+                                BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "dashboard-urgent-product__badge--normal",
+                                _ => "dashboard-urgent-product__badge--unknown"
+                            };
+                            var trendLabel = item.SalesTrend switch
+                            {
+                                BAPStockManagement.ViewModels.Home.StockSalesTrend.Increasing => "เพิ่มขึ้น",
+                                BAPStockManagement.ViewModels.Home.StockSalesTrend.Decreasing => "ลดลง",
+                                BAPStockManagement.ViewModels.Home.StockSalesTrend.Stable => "ทรงตัว",
+                                _ => "ข้อมูลไม่พอ"
+                            };
+
+                            <article class="dashboard-ai-modal-item">
+                                <div class="dashboard-ai-modal-item__header">
+                                    <div class="dashboard-ai-modal-item__identity">
+                                        <strong>@item.Sku</strong>
+                                        <span>@item.ProductName</span>
+                                    </div>
+                                    <span class="dashboard-urgent-product__badge @riskClass">@riskLabel</span>
+                                </div>
+                                <div class="dashboard-ai-modal-item__facts">
+                                    <span>คงเหลือ <strong>@item.CurrentStock.ToString("N0") @item.Unit</strong></span>
+                                    @if (item.AverageDailySales.HasValue)
+                                    {
+                                        <span>เฉลี่ย <strong>@item.AverageDailySales.Value.ToString("0.##") @item.Unit/วัน</strong></span>
+                                        <span>แนวโน้ม <strong>@trendLabel</strong></span>
+                                    }
+                                    @if (item.DaysUntilStockout.HasValue)
+                                    {
+                                        <span>คาดว่าจะหมดใน <strong>@Math.Ceiling(item.DaysUntilStockout.Value).ToString("N0") วัน</strong></span>
+                                    }
+                                    @if (item.EstimatedStockoutDate.HasValue)
+                                    {
+                                        <span>วันที่คาดการณ์ <strong>@item.EstimatedStockoutDate.Value.ToString("dd/MM/yyyy")</strong></span>
+                                    }
+                                </div>
+                                <p class="dashboard-ai-modal-item__recommendation">@item.Recommendation</p>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-primary"
+                                        data-stock-analysis
+                                        data-sku="@item.Sku"
+                                        data-product="@item.ProductName"
+                                        data-stock="@item.CurrentStock"
+                                        data-unit="@item.Unit"
+                                        data-average="@(item.AverageDailySales?.ToString("0.##") ?? string.Empty)"
+                                        data-days="@(item.DaysUntilStockout?.ToString("0.##") ?? string.Empty)"
+                                        data-date="@(item.EstimatedStockoutDate?.ToString("dd/MM/yyyy") ?? string.Empty)"
+                                        data-risk="@riskLabel"
+                                        data-trend="@trendLabel"
+                                        data-window="@(item.AnalysisWindowDays?.ToString() ?? string.Empty)"
+                                        data-history-available="@item.AnalysisWindowDays.HasValue.ToString().ToLowerInvariant()"
+                                        data-recommendation="@item.Recommendation"
+                                        data-history="@System.Text.Json.JsonSerializer.Serialize(item.SalesHistory)">
+                                    <i class="bi bi-clipboard-data" aria-hidden="true"></i> ดูรายละเอียดการวิเคราะห์
+                                </button>
+                            </article>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="stockPredictionModal" tabindex="-1" aria-labelledby="stockPredictionModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title fs-5" id="stockPredictionModalTitle">AI Stock Analysis</h2>
+                    <p class="stock-prediction-modal__subtitle mb-0" id="stockPredictionModalSubtitle"></p>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="returnToStockActionsButton" hidden>
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i> กลับไปรายการทั้งหมด
+                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
+                <div class="stock-prediction-modal__metrics">
+                    <div><span>คงเหลือ</span><strong id="predictionModalStock">-</strong></div>
+                    <div><span>เฉลี่ยจ่ายออก/วัน</span><strong id="predictionModalAverage">-</strong></div>
+                    <div><span>คาดว่าจะหมด</span><strong id="predictionModalDays">-</strong></div>
+                    <div><span>วันที่คาดการณ์</span><strong id="predictionModalDate">-</strong></div>
+                    <div><span>ความเสี่ยง</span><strong id="predictionModalRisk">-</strong></div>
+                    <div><span>แนวโน้ม</span><strong id="predictionModalTrend">-</strong></div>
+                </div>
+                <div class="stock-prediction-modal__section">
+                    <h3>ยอดขายย้อนหลัง 30 วัน</h3>
+                    <p class="stock-prediction-modal__empty" id="predictionHistoryEmpty" hidden>ไม่มีข้อมูลยอดขายย้อนหลังเพียงพอสำหรับแสดงกราฟ</p>
+                    <svg id="predictionHistoryChart" class="stock-prediction-chart" viewBox="0 0 600 190" role="img" aria-label="กราฟยอดขายย้อนหลัง 30 วัน"></svg>
+                </div>
+                <div class="stock-prediction-modal__section">
+                    <h3>แนวโน้มสต็อกตามอัตราจ่ายออกเฉลี่ย</h3>
+                    <p class="stock-prediction-modal__empty" id="predictionForecastEmpty" hidden>ข้อมูลไม่เพียงพอสำหรับการคาดการณ์แนวโน้มสต็อก</p>
+                    <svg id="predictionForecastChart" class="stock-prediction-chart" viewBox="0 0 600 190" role="img" aria-label="กราฟคาดการณ์สต็อก"></svg>
+                    <p class="stock-prediction-modal__reason" id="predictionModalReason"></p>
+                    <div class="stock-prediction-modal__recommendation" id="predictionModalRecommendation"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <button class="dashboard-section-carousel__control dashboard-section-carousel__control--fixed" type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide="next" aria-label="ไปหน้าถัดไป" title="ไปหน้าถัดไป">
     <i class="bi bi-arrow-right" aria-hidden="true"></i>
 </button>
 
 @section Scripts {
+    <script>
+        (function () {
+            var stockPageItems = document.querySelectorAll('[data-stock-page-item]');
+            var stockPageLabel = document.querySelector('[data-stock-page-label]');
+            var stockPagePrevious = document.querySelector('[data-stock-page-prev]');
+            var stockPageNext = document.querySelector('[data-stock-page-next]');
+            var stockPageSize = 3;
+            var stockPageCount = Math.ceil(stockPageItems.length / stockPageSize);
+            var currentStockPage = 0;
+
+            if (stockPageItems.length > 0 && stockPageLabel && stockPagePrevious && stockPageNext) {
+                function renderStockPage() {
+                    var start = currentStockPage * stockPageSize;
+                    var end = Math.min(start + stockPageSize, stockPageItems.length);
+
+                    stockPageItems.forEach(function (item, index) {
+                        item.hidden = index < start || index >= end;
+                    });
+                    stockPageLabel.textContent =
+                        (start + 1).toLocaleString('th-TH') + '–' + end.toLocaleString('th-TH') +
+                        ' / ' + stockPageItems.length.toLocaleString('th-TH');
+                    stockPagePrevious.disabled = currentStockPage === 0;
+                    stockPageNext.disabled = currentStockPage >= stockPageCount - 1;
+                }
+
+                stockPagePrevious.addEventListener('click', function () {
+                    if (currentStockPage > 0) {
+                        currentStockPage--;
+                        renderStockPage();
+                    }
+                });
+                stockPageNext.addEventListener('click', function () {
+                    if (currentStockPage < stockPageCount - 1) {
+                        currentStockPage++;
+                        renderStockPage();
+                    }
+                });
+            }
+
+            var modal = document.getElementById('stockPredictionModal');
+            if (!modal) return;
+
+            var stockActionsModalElement = document.getElementById('stockActionsModal');
+            var stockActionsModal = bootstrap.Modal.getOrCreateInstance(stockActionsModalElement);
+            var predictionModal = bootstrap.Modal.getOrCreateInstance(modal);
+            var returnToStockActionsButton = document.getElementById('returnToStockActionsButton');
+            var shouldReturnToStockActions = false;
+
+            stockActionsModalElement.addEventListener('click', function (event) {
+                var trigger = event.target.closest('[data-stock-analysis]');
+                if (!trigger) return;
+
+                shouldReturnToStockActions = true;
+                stockActionsModalElement.addEventListener('hidden.bs.modal', function openAnalysis() {
+                    stockActionsModalElement.removeEventListener('hidden.bs.modal', openAnalysis);
+                    predictionModal.show(trigger);
+                });
+                stockActionsModal.hide();
+            });
+
+            modal.addEventListener('show.bs.modal', function () {
+                returnToStockActionsButton.hidden = !shouldReturnToStockActions;
+            });
+            modal.addEventListener('hidden.bs.modal', function () {
+                returnToStockActionsButton.hidden = true;
+                if (shouldReturnToStockActions) {
+                    shouldReturnToStockActions = false;
+                    stockActionsModal.show();
+                }
+            });
+            returnToStockActionsButton.addEventListener('click', function () {
+                predictionModal.hide();
+            });
+
+            var historyChart = document.getElementById('predictionHistoryChart');
+            var forecastChart = document.getElementById('predictionForecastChart');
+            var historyEmpty = document.getElementById('predictionHistoryEmpty');
+            var forecastEmpty = document.getElementById('predictionForecastEmpty');
+            var svgNamespace = 'http://www.w3.org/2000/svg';
+
+            function createSvgElement(name, attributes, text) {
+                var element = document.createElementNS(svgNamespace, name);
+                Object.keys(attributes || {}).forEach(function (key) {
+                    element.setAttribute(key, attributes[key]);
+                });
+                if (text !== undefined) element.textContent = text;
+                return element;
+            }
+
+            function getPointQuantity(point) {
+                return Number(point.quantity !== undefined ? point.quantity : point.Quantity) || 0;
+            }
+
+            function renderHistory(history) {
+                historyChart.replaceChildren();
+                var maxQuantity = Math.max.apply(null, [1].concat(history.map(getPointQuantity)));
+                historyChart.appendChild(createSvgElement('line', { x1: 24, y1: 151, x2: 588, y2: 151, class: 'stock-prediction-chart__axis' }));
+
+                history.forEach(function (point, index) {
+                    var quantity = getPointQuantity(point);
+                    var x = 28 + index * 18.5;
+                    var height = quantity * 116 / maxQuantity;
+                    historyChart.appendChild(createSvgElement('rect', {
+                        x: x,
+                        y: 150 - height,
+                        width: 11,
+                        height: height,
+                        rx: 2,
+                        class: 'stock-prediction-chart__bar'
+                    }));
+
+                    if (index % 5 === 0 || index === history.length - 1) {
+                        historyChart.appendChild(createSvgElement('text', {
+                            x: x + 5.5,
+                            y: 174,
+                            'text-anchor': 'middle',
+                            class: 'stock-prediction-chart__label'
+                        }, point.label !== undefined ? point.label : point.Label));
+                    }
+                });
+            }
+
+            function renderForecast(stock, average, days) {
+                forecastChart.replaceChildren();
+                var maxStock = Math.max(stock, 1);
+                var horizon = Math.min(days, 30);
+                var projectedStock = Math.max(stock - average * horizon, 0);
+                var startY = 150 - stock * 116 / maxStock;
+                var endY = 150 - projectedStock * 116 / maxStock;
+
+                forecastChart.appendChild(createSvgElement('line', { x1: 30, y1: 151, x2: 580, y2: 151, class: 'stock-prediction-chart__axis' }));
+                forecastChart.appendChild(createSvgElement('line', {
+                    x1: 34,
+                    y1: startY,
+                    x2: 574,
+                    y2: endY,
+                    class: 'stock-prediction-chart__forecast'
+                }));
+                forecastChart.appendChild(createSvgElement('circle', { cx: 34, cy: startY, r: 4, class: 'stock-prediction-chart__point' }));
+                forecastChart.appendChild(createSvgElement('circle', { cx: 574, cy: endY, r: 4, class: 'stock-prediction-chart__point' }));
+                forecastChart.appendChild(createSvgElement('text', { x: 34, y: 174, class: 'stock-prediction-chart__label' }, 'วันนี้ · ' + stock));
+                forecastChart.appendChild(createSvgElement('text', {
+                    x: 574,
+                    y: 174,
+                    'text-anchor': 'end',
+                    class: 'stock-prediction-chart__label'
+                }, 'อีก ' + horizon.toFixed(0) + ' วัน · ' + projectedStock.toFixed(1)));
+            }
+
+            modal.addEventListener('show.bs.modal', function (event) {
+                var trigger = event.relatedTarget;
+                if (!trigger) return;
+
+                var historyAvailable = trigger.dataset.historyAvailable === 'true';
+                var average = Number(trigger.dataset.average);
+                var days = Number(trigger.dataset.days);
+                var stock = Number(trigger.dataset.stock) || 0;
+                var unit = trigger.dataset.unit || '';
+                var history = JSON.parse(trigger.dataset.history || '[]');
+
+                document.getElementById('stockPredictionModalTitle').textContent = trigger.dataset.sku || '';
+                document.getElementById('stockPredictionModalSubtitle').textContent = trigger.dataset.product || '';
+                document.getElementById('predictionModalStock').textContent = stock.toLocaleString('th-TH') + ' ' + unit;
+                document.getElementById('predictionModalAverage').textContent = historyAvailable
+                    ? average.toLocaleString('th-TH', { maximumFractionDigits: 2 }) + ' ' + unit + '/วัน'
+                    : 'ข้อมูลไม่เพียงพอ';
+                document.getElementById('predictionModalDays').textContent = trigger.dataset.days !== '' && Number.isFinite(days)
+                    ? Math.ceil(days).toLocaleString('th-TH') + ' วัน'
+                    : 'ยังประเมินไม่ได้';
+                document.getElementById('predictionModalDate').textContent = trigger.dataset.date || 'ยังประเมินไม่ได้';
+                document.getElementById('predictionModalRisk').textContent = trigger.dataset.risk || '';
+                document.getElementById('predictionModalTrend').textContent = trigger.dataset.trend || '';
+                historyChart.hidden = !historyAvailable;
+                historyEmpty.hidden = historyAvailable;
+                forecastChart.hidden = !historyAvailable;
+                forecastEmpty.hidden = historyAvailable;
+
+                if (historyAvailable) {
+                    renderHistory(history);
+                    renderForecast(stock, average, days);
+                }
+
+                var reason = historyAvailable
+                    ? 'คำนวณจากยอดขายในบิลที่เชื่อมกับสต็อกย้อนหลัง ' + (trigger.dataset.window || '90') +
+                        ' วัน เปรียบเทียบแนวโน้มกับช่วง 30 วันก่อนหน้า ระดับความเสี่ยง: ' + (trigger.dataset.risk || '') + '.'
+                    : 'ไม่พบประวัติยอดขายในบิลที่เชื่อมกับสต็อกในช่วง 90 วันที่ใช้วิเคราะห์ จึงไม่แสดงค่าคาดการณ์ที่ไม่มีข้อมูลรองรับ.';
+                document.getElementById('predictionModalReason').textContent = reason;
+                document.getElementById('predictionModalRecommendation').textContent = trigger.dataset.recommendation || '';
+            });
+        })();
+    </script>
     <script>
         (function () {
             var simulation = document.querySelector('[data-dashboard-simulation]');
