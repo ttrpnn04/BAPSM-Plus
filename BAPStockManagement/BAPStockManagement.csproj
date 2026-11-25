@@ -11,6 +11,9 @@
     <Content Include="Templates\BillSaleTemplate.xlsx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Update="Forecasting\**\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="Forecasting\predict.py;Forecasting\requirements.txt;Forecasting\models\*.joblib;Forecasting\models\*.ubj"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

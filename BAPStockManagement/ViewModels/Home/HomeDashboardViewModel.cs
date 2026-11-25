@@ -56,50 +56,7 @@ public class HomeDashboardViewModel
 
     public IReadOnlyList<StockAlertItem> OutOfStockItems { get; set; } = [];
 
-    public SmartStockDemoDashboardViewModel SmartStockDemo { get; set; } = new();
-}
-
-public sealed class SmartStockDemoDashboardViewModel
-{
-    public string ModelName { get; set; } = "SARIMA_1step";
-
-    public int ActualSales { get; set; }
-
-    public int ForecastSales { get; set; }
-
-    public int ProductsAtRisk { get; set; }
-
-    public IReadOnlyList<SmartStockDemoWeeklyPoint> WeeklySales { get; set; } = [];
-
-    public IReadOnlyList<SmartStockDemoSegmentSummary> SegmentSummaries { get; set; } = [];
-
-    public IReadOnlyList<SmartStockDemoRiskItem> StockRisks { get; set; } = [];
-
-    public IReadOnlyList<SmartStockDemoPurchaseItem> PurchaseRecommendations { get; set; } = [];
-
-    public IReadOnlyList<SmartStockDemoMetric> ModelMetrics { get; set; } = [];
-}
-
-public sealed class SmartStockDemoWeeklyPoint
-{
-    public string WeekStart { get; set; } = string.Empty;
-
-    public string Segment { get; set; } = string.Empty;
-
-    public int ActualSales { get; set; }
-
-    public int ForecastSales { get; set; }
-}
-
-public sealed class SmartStockDemoSegmentSummary
-{
-    public string Segment { get; set; } = string.Empty;
-
-    public int ActualSales { get; set; }
-
-    public int ForecastSales { get; set; }
-
-    public int Variance { get; set; }
+    public SmartStockDashboardViewModel SmartStock { get; set; } = new();
 }
 
 public sealed class SmartStockDemoRiskItem
@@ -146,13 +103,6 @@ public sealed class SmartStockDemoPurchaseItem
     public string Priority { get; set; } = string.Empty;
 
     public string RecommendationReason { get; set; } = string.Empty;
-}
-
-public sealed class SmartStockDemoMetric
-{
-    public string Name { get; set; } = string.Empty;
-
-    public string Value { get; set; } = string.Empty;
 }
 
 public class CategoryStockChartItem

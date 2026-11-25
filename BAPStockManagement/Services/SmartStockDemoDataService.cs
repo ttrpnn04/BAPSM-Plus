@@ -42,10 +42,10 @@ public static class SmartStockDemoCalculator
                 : "Low";
 
         var explanation = estimatedRemaining < 0
-            ? "สต็อกปัจจุบันอาจไม่เพียงพอต่อยอด demand ที่คาดการณ์ ควรจัดลำดับเติมสต็อกสินค้านี้ก่อน"
-            : estimatedRemaining <= input.SafetyStock
-                ? "ยอด demand ที่คาดการณ์อาจทำให้สต็อกเหลือน้อยกว่า Safety Stock ที่กำหนดควรเตรียมคำแนะนำเติมสต็อก"
-                : "สต็อกปัจจุบันสูงกว่า forecast demand และ Safety Stock ที่กำหนด สามารถติดตามต่อได้";
+            ? $"สต็อกต่ำกว่ายอดที่คาด {Math.Abs(estimatedRemaining):N0} หน่วย"
+            : estimatedRemaining < input.SafetyStock
+                ? "หลังขายตามคาด สต็อกจะต่ำกว่ายอดสำรอง"
+                : "สต็อกครอบคลุมยอดที่คาดและยอดสำรอง";
 
         var risk = new SmartStockDemoRiskItem
         {
@@ -60,8 +60,8 @@ public static class SmartStockDemoCalculator
             RiskLevel = riskLevel,
             RiskReason = explanation,
             RecommendedAction = recommendedQuantity > 0
-                ? $"คำแนะนำจำลอง: เตรียมสั่งซื้อเพิ่ม {recommendedQuantity} หน่วย"
-                : "ยังไม่จำเป็นต้องแนะนำการสั่งซื้อในขั้นตอนนี้",
+                ? $"เตรียมสั่งเพิ่ม {recommendedQuantity:N0} หน่วย"
+                : "ยังไม่ต้องสั่งเพิ่ม",
         };
 
         var purchase = new SmartStockDemoPurchaseItem
@@ -74,130 +74,9 @@ public static class SmartStockDemoCalculator
             EstimatedRemainingStock = estimatedRemaining,
             SuggestedQuantity = recommendedQuantity,
             Priority = priority,
-            RecommendationReason = recommendedQuantity > 0
-                ? $"คำนวณจาก Forecast Demand ({input.ForecastDemand}) + Safety Stock ({input.SafetyStock}) - สต็อกปัจจุบัน ({input.CurrentStock})"
-                : "สต็อกปัจจุบันครอบคลุมทั้ง Forecast Demand และ Safety Stock ที่กำหนดแล้ว",
+            RecommendationReason = explanation,
         };
 
         return (risk, purchase);
     }
-}
-
-public interface ISmartStockDemoDataProvider
-{
-    SmartStockDemoDashboardViewModel GetDashboardData();
-}
-
-public sealed class SmartStockDemoDataService : ISmartStockDemoDataProvider
-{
-    public SmartStockDemoDashboardViewModel GetDashboardData()
-    {
-        var weeklySales = new[]
-        {
-            NewWeek("2026-09-14", "Bicycle", 380, 392),
-            NewWeek("2026-09-21", "Bicycle", 398, 405),
-            NewWeek("2026-09-28", "Bicycle", 410, 418),
-            NewWeek("2026-10-05", "Bicycle", 428, 424),
-            NewWeek("2026-10-12", "Bicycle", 415, 431),
-            NewWeek("2026-10-19", "Bicycle", 438, 440),
-            NewWeek("2026-10-26", "Bicycle", 420, 438),
-            NewWeek("2026-11-02", "Bicycle", 448, 452),
-            NewWeek("2026-11-09", "Bicycle", 475, 468),
-            NewWeek("2026-11-16", "Bicycle", 462, 486),
-            NewWeek("2026-11-23", "Bicycle", 492, 501),
-            NewWeek("2026-11-30", "Bicycle", 510, 518),
-            NewWeek("2026-09-14", "Ride-on", 272, 280),
-            NewWeek("2026-09-21", "Ride-on", 286, 292),
-            NewWeek("2026-09-28", "Ride-on", 295, 301),
-            NewWeek("2026-10-05", "Ride-on", 304, 310),
-            NewWeek("2026-10-12", "Ride-on", 298, 316),
-            NewWeek("2026-10-19", "Ride-on", 318, 321),
-            NewWeek("2026-10-26", "Ride-on", 310, 326),
-            NewWeek("2026-11-02", "Ride-on", 332, 338),
-            NewWeek("2026-11-09", "Ride-on", 348, 352),
-            NewWeek("2026-11-16", "Ride-on", 365, 360),
-            NewWeek("2026-11-23", "Ride-on", 378, 372),
-            NewWeek("2026-11-30", "Ride-on", 390, 386),
-            NewWeek("2026-09-14", "Tyre", 468, 476),
-            NewWeek("2026-09-21", "Tyre", 482, 488),
-            NewWeek("2026-09-28", "Tyre", 496, 502),
-            NewWeek("2026-10-05", "Tyre", 510, 514),
-            NewWeek("2026-10-12", "Tyre", 528, 526),
-            NewWeek("2026-10-19", "Tyre", 516, 534),
-            NewWeek("2026-10-26", "Tyre", 520, 508),
-            NewWeek("2026-11-02", "Tyre", 545, 536),
-            NewWeek("2026-11-09", "Tyre", 532, 548),
-            NewWeek("2026-11-16", "Tyre", 560, 566),
-            NewWeek("2026-11-23", "Tyre", 582, 574),
-            NewWeek("2026-11-30", "Tyre", 605, 598),
-            NewWeek("2026-09-14", "Pool", 210, 218),
-            NewWeek("2026-09-21", "Pool", 226, 232),
-            NewWeek("2026-09-28", "Pool", 238, 244),
-            NewWeek("2026-10-05", "Pool", 248, 252),
-            NewWeek("2026-10-12", "Pool", 236, 260),
-            NewWeek("2026-10-19", "Pool", 252, 264),
-            NewWeek("2026-10-26", "Pool", 245, 258),
-            NewWeek("2026-11-02", "Pool", 268, 270),
-            NewWeek("2026-11-09", "Pool", 284, 281),
-            NewWeek("2026-11-16", "Pool", 275, 292),
-            NewWeek("2026-11-23", "Pool", 296, 304),
-            NewWeek("2026-11-30", "Pool", 318, 312)
-        };
-
-        var segmentSummaries = weeklySales
-            .GroupBy(point => point.Segment)
-            .Select(group => new SmartStockDemoSegmentSummary
-            {
-                Segment = group.Key,
-                ActualSales = group.Sum(point => point.ActualSales),
-                ForecastSales = group.Sum(point => point.ForecastSales),
-                Variance = group.Sum(point => point.ForecastSales - point.ActualSales)
-            })
-            .OrderBy(summary => summary.Segment)
-            .ToList();
-
-        var inventoryInputs = new[]
-        {
-            new SmartStockInventoryInput(1001, "Mountain Bicycle 20\"", "Bicycle", 8, 45, 5),
-            new SmartStockInventoryInput(2004, "Kids Ride-on Red", "Ride-on", 30, 35, 5),
-            new SmartStockInventoryInput(3007, "All-season Tyre 12\"", "Tyre", 32, 48, 8),
-            new SmartStockInventoryInput(4002, "Pool Filter Cartridge", "Pool", 35, 26, 5)
-        };
-
-        var analyses = inventoryInputs
-            .Select(SmartStockDemoCalculator.Analyze)
-            .ToList();
-        var stockRisks = analyses.Select(item => item.Risk).ToList();
-        var purchaseRecommendations = analyses.Select(item => item.Purchase).ToList();
-
-        return new SmartStockDemoDashboardViewModel
-        {
-            ModelName = "SARIMA_1step",
-            ActualSales = weeklySales.Sum(point => point.ActualSales),
-            ForecastSales = weeklySales.Sum(point => point.ForecastSales),
-            ProductsAtRisk = stockRisks.Count,
-            WeeklySales = weeklySales,
-            SegmentSummaries = segmentSummaries,
-            StockRisks = stockRisks,
-            PurchaseRecommendations = purchaseRecommendations,
-            ModelMetrics = [
-                new SmartStockDemoMetric { Name = "MAE", Value = "Not provided" },
-                new SmartStockDemoMetric { Name = "RMSE", Value = "Not provided" },
-                new SmartStockDemoMetric { Name = "WMAPE", Value = "Not provided" }
-            ]
-        };
-    }
-
-    private static SmartStockDemoWeeklyPoint NewWeek(
-        string weekStart,
-        string segment,
-        int actualSales,
-        int forecastSales)
-        => new()
-        {
-            WeekStart = weekStart,
-            Segment = segment,
-            ActualSales = actualSales,
-            ForecastSales = forecastSales
-        };
 }

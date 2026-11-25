@@ -1,0 +1,304 @@
+{
+  "target": "sale_qty_nobulk",
+  "grain": "segment",
+  "horizon_weeks": 1,
+  "data_through": "2026-09-14",
+  "generated_at_utc": "2026-11-25T18:55:08.263296+00:00",
+  "stock_confirmed": false,
+  "selection": "expanding-window validation RMSE",
+  "test_previously_reviewed": true,
+  "data_sha256": "d7cd9b7128a86311f3883416675108e4fb505bf4d9bb1db8baacfdc2546ecf10",
+  "versions": {
+    "python": "3.13.18",
+    "sklearn": "1.6.1",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.6.0",
+    "statsmodels": "0.15.0"
+  },
+  "segments": {
+    "bicycle_12": {
+      "experiment": "SARIMA_1step | baseline | -",
+      "model": "SARIMA_1step",
+      "mode": "baseline",
+      "feature_set": "-",
+      "valid_rmse": 68.1215820293983,
+      "artifact": "models/8fc6ec225a3bb70a_sarima.json",
+      "configuration": {
+        "model": "SARIMA_1step",
+        "mode": "baseline",
+        "feature_set": "-",
+        "sku": "bicycle_12",
+        "order": [
+          0,
+          1,
+          1
+        ],
+        "seasonal_order": [
+          1,
+          0,
+          0,
+          52
+        ],
+        "valid_rmse": 68.1215820293983
+      },
+      "artifact_format": "sarima_parameters_and_history_json",
+      "status": "ok",
+      "next_prediction": 113.37748650488751
+    },
+    "bicycle_16": {
+      "experiment": "XGB | local | lags+calendar",
+      "model": "XGB",
+      "mode": "local",
+      "feature_set": "lags+calendar",
+      "valid_rmse": 86.98640827032133,
+      "artifact": "models/aead9d214fb25bcc.ubj",
+      "configuration": {
+        "model": "XGB",
+        "mode": "local",
+        "feature_set": "lags+calendar",
+        "sku": "bicycle_16",
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 3,
+          "learning_rate": 0.03,
+          "subsample": 0.8,
+          "colsample_bytree": 0.8
+        },
+        "valid_rmse": 86.98640827032133
+      },
+      "features": [
+        "lag_1",
+        "lag_2",
+        "lag_4",
+        "lag_52",
+        "roll4_mean",
+        "roll13_mean",
+        "month",
+        "weekofyear"
+      ],
+      "artifact_format": "xgboost_ubjson",
+      "status": "ok",
+      "next_prediction": 97.66641235351562,
+      "original_artifact_sha256": "8fc99ac5af0d7f8a7abb747f92bf736cf670f6e38781a2a50f9f9d9128091871",
+      "imputer_statistics": [
+        170.0,
+        170.0,
+        170.0,
+        170.0,
+        162.25,
+        170.30769230769232,
+        6.0,
+        25.0
+      ]
+    },
+    "bicycle_18": {
+      "experiment": "SARIMA_1step | baseline | -",
+      "model": "SARIMA_1step",
+      "mode": "baseline",
+      "feature_set": "-",
+      "valid_rmse": 34.96729733933408,
+      "artifact": "models/60c14d111ef64c3c_sarima.json",
+      "configuration": {
+        "model": "SARIMA_1step",
+        "mode": "baseline",
+        "feature_set": "-",
+        "sku": "bicycle_18",
+        "order": [
+          1,
+          0,
+          1
+        ],
+        "seasonal_order": [
+          0,
+          0,
+          0,
+          52
+        ],
+        "valid_rmse": 34.96729733933408
+      },
+      "artifact_format": "sarima_parameters_and_history_json",
+      "status": "ok",
+      "next_prediction": 103.0965837764938
+    },
+    "bicycle_20": {
+      "experiment": "HistGB | local | lags+calendar",
+      "model": "HistGB",
+      "mode": "local",
+      "feature_set": "lags+calendar",
+      "valid_rmse": 147.57203060412434,
+      "artifact": "models/0a051319dfa46cf8.joblib",
+      "configuration": {
+        "model": "HistGB",
+        "mode": "local",
+        "feature_set": "lags+calendar",
+        "sku": "bicycle_20",
+        "params": {
+          "max_iter": 300,
+          "max_depth": 6,
+          "learning_rate": 0.03,
+          "min_samples_leaf": 20
+        },
+        "valid_rmse": 147.57203060412434
+      },
+      "features": [
+        "lag_1",
+        "lag_2",
+        "lag_4",
+        "lag_52",
+        "roll4_mean",
+        "roll13_mean",
+        "month",
+        "weekofyear"
+      ],
+      "artifact_format": "joblib_pipeline",
+      "status": "ok",
+      "next_prediction": 125.40261868916835
+    },
+    "bicycle_24": {
+      "experiment": "RF | local | lags+calendar",
+      "model": "RF",
+      "mode": "local",
+      "feature_set": "lags+calendar",
+      "valid_rmse": 133.4741432744973,
+      "artifact": "models/3e9376eaac5ab620.joblib",
+      "configuration": {
+        "model": "RF",
+        "mode": "local",
+        "feature_set": "lags+calendar",
+        "sku": "bicycle_24",
+        "params": {
+          "n_estimators": 300,
+          "max_depth": 8,
+          "min_samples_leaf": 5,
+          "max_features": 0.8
+        },
+        "valid_rmse": 133.4741432744973
+      },
+      "features": [
+        "lag_1",
+        "lag_2",
+        "lag_4",
+        "lag_52",
+        "roll4_mean",
+        "roll13_mean",
+        "month",
+        "weekofyear"
+      ],
+      "artifact_format": "joblib_pipeline",
+      "status": "ok",
+      "next_prediction": 180.70319893893756
+    },
+    "bicycle_other": {
+      "experiment": "SARIMA_1step | baseline | -",
+      "model": "SARIMA_1step",
+      "mode": "baseline",
+      "feature_set": "-",
+      "valid_rmse": 9.104412130271541,
+      "artifact": "models/de4eafc08f6e0797_sarima.json",
+      "configuration": {
+        "model": "SARIMA_1step",
+        "mode": "baseline",
+        "feature_set": "-",
+        "sku": "bicycle_other",
+        "order": [
+          1,
+          0,
+          1
+        ],
+        "seasonal_order": [
+          0,
+          0,
+          0,
+          52
+        ],
+        "valid_rmse": 9.104412130271541
+      },
+      "artifact_format": "sarima_parameters_and_history_json",
+      "status": "ok",
+      "next_prediction": 15.88858018862274
+    },
+    "pool": {
+      "experiment": "SARIMA_1step | baseline | -",
+      "model": "SARIMA_1step",
+      "mode": "baseline",
+      "feature_set": "-",
+      "valid_rmse": 0.0,
+      "artifact": "models/27cac5503836765c_sarima.json",
+      "configuration": {
+        "model": "SARIMA_1step",
+        "mode": "baseline",
+        "feature_set": "-",
+        "sku": "pool",
+        "order": [
+          0,
+          0,
+          0
+        ],
+        "seasonal_order": [
+          0,
+          0,
+          0,
+          52
+        ],
+        "valid_rmse": 0.0
+      },
+      "artifact_format": "sarima_parameters_and_history_json",
+      "status": "ok",
+      "next_prediction": 0.0
+    },
+    "ride_on": {
+      "experiment": "Croston | baseline | -",
+      "model": "Croston",
+      "mode": "baseline",
+      "feature_set": "-",
+      "valid_rmse": 13.718981912573833,
+      "artifact": "models/4477993d8a26536b_history.json",
+      "configuration": {
+        "model": "Croston",
+        "mode": "baseline",
+        "feature_set": "-",
+        "sku": "ride_on",
+        "params": {
+          "alpha": 0.1
+        },
+        "valid_rmse": 13.718981912573833
+      },
+      "state": {
+        "next_prediction": 10.587602822296995,
+        "method": "replay historical series with configuration"
+      },
+      "artifact_format": "history_json",
+      "status": "ok",
+      "next_prediction": 10.587602822296995
+    },
+    "tyre": {
+      "experiment": "SARIMA_1step | baseline | -",
+      "model": "SARIMA_1step",
+      "mode": "baseline",
+      "feature_set": "-",
+      "valid_rmse": 0.0,
+      "artifact": "models/767e419e7fe373f1_sarima.json",
+      "configuration": {
+        "model": "SARIMA_1step",
+        "mode": "baseline",
+        "feature_set": "-",
+        "sku": "tyre",
+        "order": [
+          0,
+          0,
+          0
+        ],
+        "seasonal_order": [
+          0,
+          0,
+          0,
+          52
+        ],
+        "valid_rmse": 0.0
+      },
+      "artifact_format": "sarima_parameters_and_history_json",
+      "status": "ok",
+      "next_prediction": 0.0
+    }
+  }
+}

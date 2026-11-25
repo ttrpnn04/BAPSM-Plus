@@ -1,0 +1,40 @@
+@model BAPStockManagement.ViewModels.Home.SmartStockAnalysisListViewModel
+
+@if (Model.Items.Count == 0)
+{
+    <p class="smart-stock-live__empty">@Model.EmptyMessage</p>
+}
+else
+{
+    <ul class="smart-stock-live__list">
+        @foreach (var item in Model.Items)
+        {
+            var risk = item.Risk;
+            var buying = item.Purchase;
+            var riskLabel = risk.RiskLevel switch { "High" => "สูง", "Medium" => "ปานกลาง", _ => "ต่ำ" };
+            var priorityLabel = buying.Priority switch { "Urgent" => "เร่งด่วน", "Medium" => "ปานกลาง", _ => "ต่ำ" };
+            <li data-list-row data-risk="@risk.RiskLevel" data-query="@item.Sku @risk.ProductName">
+                <button type="button" class="smart-stock-live__row" data-smart-stock-detail="@risk.ProductId">
+                    <span class="smart-stock-live__row-title">
+                        <strong>@risk.ProductName</strong>
+                        <small>@item.Sku · @item.SegmentLabel</small>
+                        @if (Model.Buying) { <span class="smart-stock-live__row-reason">@buying.RecommendationReason</span> }
+                    </span>
+                    <span class="smart-stock-live__row-value">
+                        @if (Model.Buying)
+                        {
+                            <strong>+@buying.SuggestedQuantity.ToString("N0")</strong>
+                            <small>@item.Unit · @priorityLabel</small>
+                        }
+                        else
+                        {
+                            <span class="smart-stock-risk smart-stock-risk-@risk.RiskLevel.ToLowerInvariant()">@riskLabel</span>
+                            <small>สต็อก @risk.CurrentStock.ToString("N0") / คาด @risk.ForecastDemand.ToString("N0")</small>
+                        }
+                    </span>
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                </button>
+            </li>
+        }
+    </ul>
+}

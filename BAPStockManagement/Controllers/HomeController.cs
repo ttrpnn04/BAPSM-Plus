@@ -14,16 +14,16 @@ public class HomeController : Controller
 {
     private readonly BAPStockContext _context;
     private readonly StockPredictionService _stockPredictionService;
-    private readonly ISmartStockDemoDataProvider _smartStockDemoDataProvider;
+    private readonly SmartStockDashboardService _smartStockDashboardService;
 
     public HomeController(
         BAPStockContext context,
         StockPredictionService stockPredictionService,
-        ISmartStockDemoDataProvider smartStockDemoDataProvider)
+        SmartStockDashboardService smartStockDashboardService)
     {
         _context = context;
         _stockPredictionService = stockPredictionService;
-        _smartStockDemoDataProvider = smartStockDemoDataProvider;
+        _smartStockDashboardService = smartStockDashboardService;
     }
 
     public async Task<IActionResult> Index()
@@ -393,7 +393,9 @@ public class HomeController : Controller
                 prediction.DaysUntilStockout.HasValue && prediction.DaysUntilStockout <= 7),
             IncreasingSalesTrendCount = stockPredictions.Count(prediction => prediction.SalesTrend == StockSalesTrend.Increasing),
             OutOfStockItems = outOfStockItems,
-            SmartStockDemo = _smartStockDemoDataProvider.GetDashboardData()
+            SmartStock = await _smartStockDashboardService.GetDashboardDataAsync(products,
+                DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "SE Asia Standard Time")),
+                HttpContext.RequestAborted)
         });
     }
 

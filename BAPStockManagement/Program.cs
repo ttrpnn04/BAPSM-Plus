@@ -17,7 +17,9 @@ builder.Services.Configure<BillingOptions>(
 builder.Services.AddScoped<BAPStockManagement.Services.SaleBillService>();
 builder.Services.AddScoped<BAPStockManagement.Services.SaleBillExcelExporter>();
 builder.Services.AddScoped<BAPStockManagement.Services.StockPredictionService>();
-builder.Services.AddScoped<BAPStockManagement.Services.ISmartStockDemoDataProvider, BAPStockManagement.Services.SmartStockDemoDataService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<BAPStockManagement.Services.SmartStockForecastRunner>();
+builder.Services.AddScoped<BAPStockManagement.Services.SmartStockDashboardService>();
 
 builder.Services.AddControllersWithViews();
 
