@@ -1279,17 +1279,29 @@ code {
 }
 
 #dashboard-smart-restock {
-  border-color: var(--border-light);
+  border-color: #B7E4C7;
   border-radius: 12px;
-  background: var(--surface);
+  background: #E6F5ED;
   box-shadow: 0 2px 8px rgba(31, 41, 55, 0.05);
 }
 
 #dashboard-ai-alerts {
-  border-color: var(--border-light);
+  border-color: #FED7AA;
   border-radius: 12px;
-  background: var(--surface);
+  background: #FFF0E8;
   box-shadow: 0 2px 8px rgba(31, 41, 55, 0.05);
+}
+
+.dashboard-ai-card__heading h2 {
+  color: var(--text);
+}
+
+#dashboard-smart-restock .dashboard-ai-card__heading h2 {
+  color: #166534;
+}
+
+#dashboard-ai-alerts .dashboard-ai-card__heading h2 {
+  color: #9A3412;
 }
 
 .dashboard-ai-card__heading {
@@ -1303,6 +1315,23 @@ code {
   min-width: 0;
 }
 
+.dashboard-ai-card__label {
+  display: block;
+  margin-bottom: 0.12rem;
+  color: var(--text-3);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+}
+
+#dashboard-smart-restock .dashboard-ai-card__label {
+  color: #16A34A;
+}
+
+#dashboard-ai-alerts .dashboard-ai-card__label {
+  color: #EA580C;
+}
+
 .dashboard-ai-card__icon {
   display: grid;
   flex: 0 0 2.4rem;
@@ -1314,21 +1343,21 @@ code {
 }
 
 .dashboard-ai-card__icon--restock {
-  background: color-mix(in srgb, var(--success) 10%, var(--surface));
-  color: var(--success);
+  background: #DCFCE7;
+  color: #16A34A;
 }
 
 .dashboard-ai-card__icon--risk {
-  background: color-mix(in srgb, var(--danger) 9%, var(--surface));
-  color: var(--danger);
+  background: #FFEDD5;
+  color: #EA580C;
 }
 
 .dashboard-restock-count {
   flex: 0 0 auto;
   padding: 0.35rem 0.55rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--success) 14%, var(--surface));
-  color: var(--success-text);
+  background: #DCFCE7;
+  color: #166534;
   font-size: 0.68rem;
   font-weight: 700;
 }
@@ -1363,7 +1392,7 @@ code {
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--border-light);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
+  background: #FFFFFF;
 }
 
 .dashboard-stock-summary span {
@@ -1471,7 +1500,7 @@ code {
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--border-light);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
+  background: #FFFFFF;
 }
 
 .dashboard-restock-summary span {
@@ -1518,7 +1547,7 @@ code {
   padding: 0.55rem;
   border: 1px solid var(--border-light);
   border-radius: 9px;
-  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
+  background: #F7FCF8;
 }
 
 .dashboard-restock-product__header {
@@ -1709,6 +1738,11 @@ code {
   font-weight: 700;
 }
 
+#dashboard-ai-alerts .dashboard-urgent-count {
+  background: #FFEDD5;
+  color: #9A3412;
+}
+
 .dashboard-urgent-list {
   display: flex;
   flex-direction: column;
@@ -1724,7 +1758,7 @@ code {
   padding: 0.55rem;
   border: 1px solid var(--border-light);
   border-radius: 9px;
-  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
+  background: #FFFAF6;
 }
 
 .dashboard-urgent-product__icon {
@@ -1871,7 +1905,7 @@ code {
 }
 
 .dashboard-urgent-product__badge--warning {
-  background: color-mix(in srgb, var(--warning) 16%, var(--surface));
+  background: var(--warning-soft);
   color: var(--warning-text);
 }
 
@@ -1883,6 +1917,53 @@ code {
 .dashboard-urgent-product__badge--unknown {
   background: var(--border-light);
   color: var(--text-3);
+}
+
+#dashboard-smart-restock .dashboard-urgent-product__badge--warning,
+#dashboard-smart-restock .dashboard-urgent-product__badge--normal {
+  background: #DCFCE7;
+  color: #166534;
+}
+
+#dashboard-ai-alerts .dashboard-urgent-product__badge--warning,
+#dashboard-ai-alerts .dashboard-urgent-product__badge--normal {
+  background: #FFEDD5;
+  color: #9A3412;
+}
+
+#dashboard-ai-alerts .dashboard-urgent-product__badge--critical {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+#dashboard-smart-restock .btn-outline-primary {
+  border-color: #16A34A;
+  color: #166534;
+}
+
+#dashboard-smart-restock .btn-outline-primary:hover {
+  border-color: #16A34A;
+  background: #16A34A;
+  color: #FFFFFF;
+}
+
+#dashboard-smart-restock .dashboard-restock-footer [data-bs-target="#smartRestockInfoModal"] {
+  border-color: #16A34A;
+  background: #16A34A;
+  color: #FFFFFF;
+}
+
+#dashboard-ai-alerts .dashboard-ai-product__actions .btn,
+#dashboard-ai-alerts .dashboard-ai-card__footer > .btn {
+  border-color: #EA580C;
+  color: #9A3412;
+}
+
+#dashboard-ai-alerts .dashboard-ai-product__actions .btn:hover,
+#dashboard-ai-alerts .dashboard-ai-card__footer > .btn:hover {
+  border-color: #EA580C;
+  background: #EA580C;
+  color: #FFFFFF;
 }
 
 .dashboard-ai-disclaimer {
