@@ -5,162 +5,374 @@
     var name = User.Identity?.Name?.Split('@')[0] ?? "ผู้ใช้";
     var maxCategoryStock = Math.Max(Model.CategoryStockChartItems.Select(i => i.QtyPieces).DefaultIfEmpty(0).Max(), 1);
     var maxDailyMovement = Math.Max(Model.DailyMovementChartItems.Select(i => Math.Max(i.InPieces, i.OutPieces)).DefaultIfEmpty(0).Max(), 1);
+    var maxMonthlyMovement = Math.Max(Model.MonthlyMovementChartItems.Select(i => Math.Max(i.InPieces, i.OutPieces)).DefaultIfEmpty(0).Max(), 1);
+    var distributionItems = Model.StockDistributionChartItems.OrderByDescending(i => i.QtyPieces).Take(5).ToList();
+    var otherCategoryPieces = Model.StockDistributionChartItems.Skip(5).Sum(i => i.QtyPieces);
+    if (otherCategoryPieces > 0)
+    {
+        distributionItems.Add(new BAPStockManagement.ViewModels.Home.CategoryStockChartItem { CategoryName = "อื่นๆ", QtyPieces = otherCategoryPieces });
+    }
+
+    var distributionTotal = distributionItems.Sum(i => i.QtyPieces);
+    var distributionColors = new[] { "#2878D0", "#F2A93B", "#E94B62", "#8258D6", "#20A486", "#8492A6" };
+    var distributionStops = new List<string>();
+    var distributionOffset = 0d;
+    if (distributionTotal > 0)
+    {
+        for (var index = 0; index < distributionItems.Count; index++)
+        {
+            var nextOffset = index == distributionItems.Count - 1
+                ? 100
+                : distributionOffset + (double)distributionItems[index].QtyPieces / distributionTotal * 100;
+            var color = distributionColors[index % distributionColors.Length];
+            distributionStops.Add(
+                $"{color} {distributionOffset.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}% {nextOffset.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}%");
+            distributionOffset = nextOffset;
+        }
+    }
+
+    var distributionDonutStyle = distributionStops.Count > 0
+        ? $"background: conic-gradient({string.Join(", ", distributionStops)});"
+        : string.Empty;
+    const double trendChartLeft = 0;
+    const double trendChartRight = 568;
+    const double trendChartTop = 0;
+    const double trendChartBottom = 210;
+    var monthlyInPoints = new List<string>();
+    var monthlyOutPoints = new List<string>();
+    for (var index = 0; index < Model.MonthlyMovementChartItems.Count; index++)
+    {
+        var item = Model.MonthlyMovementChartItems[index];
+        var x = trendChartLeft + index * (trendChartRight - trendChartLeft) / Math.Max(Model.MonthlyMovementChartItems.Count - 1, 1);
+        var inY = trendChartBottom - item.InPieces * (trendChartBottom - trendChartTop) / maxMonthlyMovement;
+        var outY = trendChartBottom - item.OutPieces * (trendChartBottom - trendChartTop) / maxMonthlyMovement;
+        monthlyInPoints.Add($"{x.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)},{inY.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}");
+        monthlyOutPoints.Add($"{x.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)},{outY.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}");
+    }
 }
 
-<div class="greeting-bar">
-    <h1>สวัสดี, @name 👋</h1>
-    <p>ยินดีต้อนรับสู่ระบบจัดการสต็อกสินค้า BAP Stock</p>
-</div>
-
-<div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card stat-primary h-100">
-            <div>
-                <div class="stat-label">สินค้า active</div>
-                <div class="stat-value">@Model.ActiveProductCount.ToString("N0")</div>
-                <div class="stat-sub">@Model.ActiveVariantCount.ToString("N0") สี/รุ่น ใน @Model.ActiveCategoryCount.ToString("N0") หมวดหมู่</div>
+<div id="dashboardSectionCarousel" class="carousel slide dashboard-section-carousel mb-4" data-bs-interval="false" aria-label="เนื้อหาแดชบอร์ด">
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <div class="greeting-bar">
+                <h1>สวัสดี, @name 👋</h1>
+                <p>ยินดีต้อนรับสู่ระบบจัดการสต็อกสินค้า BAP Stock</p>
             </div>
-            <div class="stat-icon"><i class="bi bi-tags"></i></div>
-        </div>
-    </div>
 
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card stat-success h-100">
-            <div>
-                <div class="stat-label">คงเหลือทั้งหมด</div>
-                <div class="stat-value">@Model.TotalPieces.ToString("N0")</div>
-                <div class="stat-sub">@Model.TotalCases.ToString("N0") กระสอบ/ลัง/เส้น</div>
-            </div>
-            <div class="stat-icon"><i class="bi bi-boxes"></i></div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card stat-warning h-100">
-            <div>
-                <div class="stat-label">ใกล้หมด</div>
-                <div class="stat-value">@Model.LowStockProductCount.ToString("N0")</div>
-                <div class="stat-sub">สินค้าเหลือไม่เกิน 10 ชิ้น</div>
-            </div>
-            <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card stat-danger h-100">
-            <div>
-                <div class="stat-label">หมดสต็อก</div>
-                <div class="stat-value">@Model.OutOfStockProductCount.ToString("N0")</div>
-                <div class="stat-sub">สินค้าไม่มีคงเหลือ</div>
-            </div>
-            <div class="stat-icon"><i class="bi bi-dash-circle"></i></div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="stat-card stat-info h-100">
-            <div>
-                <div class="stat-label">รับเข้าเดือนนี้</div>
-                <div class="stat-value">@Model.MonthInPieces.ToString("N0")</div>
-                <div class="stat-sub">ชิ้น</div>
-            </div>
-            <div class="stat-icon"><i class="bi bi-arrow-down-circle"></i></div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="stat-card stat-secondary h-100">
-            <div>
-                <div class="stat-label">จ่ายออกเดือนนี้</div>
-                <div class="stat-value">@Model.MonthOutPieces.ToString("N0")</div>
-                <div class="stat-sub">ชิ้น</div>
-            </div>
-            <div class="stat-icon"><i class="bi bi-arrow-up-circle"></i></div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="stat-card stat-primary h-100">
-            <div>
-                <div class="stat-label">รายการเดือนนี้</div>
-                <div class="stat-value">@Model.MonthTransactionCount.ToString("N0")</div>
-                <div class="stat-sub">ล่าสุด @(Model.LastTransactionAt?.ToString("dd/MM/yyyy HH:mm") ?? "ยังไม่มีรายการ")</div>
-            </div>
-            <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3 mb-4">
-    <div class="col-xl-5">
-        <div class="chart-card h-100">
-            <div class="chart-card__header">
-                <div>
-                    <h2>สต็อกตามหมวดหมู่</h2>
-                    <p>Top 6 หมวดหมู่ที่มีจำนวนคงเหลือสูงสุด</p>
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-primary h-100">
+                        <div>
+                            <div class="stat-label">สินค้า active</div>
+                            <div class="stat-value">@Model.ActiveProductCount.ToString("N0")</div>
+                            <div class="stat-sub">@Model.ActiveVariantCount.ToString("N0") สี/รุ่น ใน @Model.ActiveCategoryCount.ToString("N0") หมวดหมู่</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-tags"></i></div>
+                    </div>
                 </div>
-                <i class="bi bi-bar-chart"></i>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-success h-100">
+                        <div>
+                            <div class="stat-label">คงเหลือทั้งหมด</div>
+                            <div class="stat-value">@Model.TotalPieces.ToString("N0")</div>
+                            <div class="stat-sub">@Model.TotalCases.ToString("N0") กระสอบ/ลัง/เส้น</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-boxes"></i></div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-warning h-100">
+                        <div>
+                            <div class="stat-label">ใกล้หมด</div>
+                            <div class="stat-value">@Model.LowStockProductCount.ToString("N0")</div>
+                            <div class="stat-sub">สินค้าเหลือไม่เกิน 10 ชิ้น</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-danger h-100">
+                        <div>
+                            <div class="stat-label">หมดสต็อก</div>
+                            <div class="stat-value">@Model.OutOfStockProductCount.ToString("N0")</div>
+                            <div class="stat-sub">สินค้าไม่มีคงเหลือ</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-dash-circle"></i></div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="stat-card stat-info h-100">
+                        <div>
+                            <div class="stat-label">รับเข้าเดือนนี้</div>
+                            <div class="stat-value">@Model.MonthInPieces.ToString("N0")</div>
+                            <div class="stat-sub">ชิ้น</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-arrow-down-circle"></i></div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="stat-card stat-secondary h-100">
+                        <div>
+                            <div class="stat-label">จ่ายออกเดือนนี้</div>
+                            <div class="stat-value">@Model.MonthOutPieces.ToString("N0")</div>
+                            <div class="stat-sub">ชิ้น</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-arrow-up-circle"></i></div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="stat-card stat-primary h-100">
+                        <div>
+                            <div class="stat-label">รายการเดือนนี้</div>
+                            <div class="stat-value">@Model.MonthTransactionCount.ToString("N0")</div>
+                            <div class="stat-sub">ล่าสุด @(Model.LastTransactionAt?.ToString("dd/MM/yyyy HH:mm") ?? "ยังไม่มีรายการ")</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+                    </div>
+                </div>
             </div>
 
-            @if (Model.CategoryStockChartItems.Count == 0)
-            {
-                <div class="chart-empty">ยังไม่มีข้อมูลสต็อกสำหรับแสดงกราฟ</div>
-            }
-            else
-            {
-                <div class="category-bar-list">
-                    @foreach (var item in Model.CategoryStockChartItems)
-                    {
-                        var percent = Math.Max((int)Math.Round(item.QtyPieces * 100.0 / maxCategoryStock), 3);
-                        <div class="category-bar-row">
-                            <div class="category-bar-meta">
-                                <span>@item.CategoryName</span>
-                                <strong>@item.QtyPieces.ToString("N0")</strong>
+            <div class="row g-3">
+                <div class="col-xl-5">
+                    <div class="chart-card h-100">
+                        <div class="chart-card__header">
+                            <div>
+                                <h2>สต็อกตามหมวดหมู่</h2>
+                                <p>Top 6 หมวดหมู่ที่มีจำนวนคงเหลือสูงสุด</p>
                             </div>
-                            <div class="category-bar-track">
-                                <div class="category-bar-fill" style="width: @percent%;"></div>
+                            <i class="bi bi-bar-chart"></i>
+                        </div>
+
+                        @if (Model.CategoryStockChartItems.Count == 0)
+                        {
+                            <div class="chart-empty">ยังไม่มีข้อมูลสต็อกสำหรับแสดงกราฟ</div>
+                        }
+                        else
+                        {
+                            <div class="category-bar-list">
+                                @foreach (var item in Model.CategoryStockChartItems)
+                                {
+                                    var percent = Math.Max((int)Math.Round(item.QtyPieces * 100.0 / maxCategoryStock), 3);
+                                    <div class="category-bar-row">
+                                        <div class="category-bar-meta">
+                                            <span>@item.CategoryName</span>
+                                            <strong>@item.QtyPieces.ToString("N0")</strong>
+                                        </div>
+                                        <div class="category-bar-track">
+                                            <div class="category-bar-fill" style="width: @percent%;"></div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-xl-7">
+                    <div class="chart-card h-100">
+                        <div class="chart-card__header">
+                            <div>
+                                <h2>รับเข้า / จ่ายออก เดือนนี้</h2>
+                                <p>เทียบจำนวนชิ้นรายวันในเดือนปัจจุบัน</p>
+                            </div>
+                            <div class="chart-legend">
+                                <span><i class="legend-dot legend-dot--in"></i>รับเข้า</span>
+                                <span><i class="legend-dot legend-dot--out"></i>จ่ายออก</span>
                             </div>
                         </div>
-                    }
-                </div>
-            }
-        </div>
-    </div>
 
-    <div class="col-xl-7">
-        <div class="chart-card h-100">
-            <div class="chart-card__header">
-                <div>
-                    <h2>รับเข้า / จ่ายออก เดือนนี้</h2>
-                    <p>เทียบจำนวนชิ้นรายวันในเดือนปัจจุบัน</p>
+                        @if (Model.DailyMovementChartItems.Count == 0)
+                        {
+                            <div class="chart-empty">ยังไม่มีรายการเดือนนี้</div>
+                        }
+                        else
+                        {
+                            <div class="daily-chart">
+                                @foreach (var item in Model.DailyMovementChartItems)
+                                {
+                                    var inHeight = Math.Max((int)Math.Round(item.InPieces * 100.0 / maxDailyMovement), item.InPieces > 0 ? 4 : 0);
+                                    var outHeight = Math.Max((int)Math.Round(item.OutPieces * 100.0 / maxDailyMovement), item.OutPieces > 0 ? 4 : 0);
+                                    <div class="daily-chart__day" title="วันที่ @item.Label: รับเข้า @item.InPieces.ToString("N0"), จ่ายออก @item.OutPieces.ToString("N0")">
+                                        <div class="daily-chart__bars">
+                                            <span class="daily-chart__bar daily-chart__bar--in" style="height: @inHeight%;"></span>
+                                            <span class="daily-chart__bar daily-chart__bar--out" style="height: @outHeight%;"></span>
+                                        </div>
+                                        <div class="daily-chart__label">@item.Label</div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
                 </div>
-                <div class="chart-legend">
-                    <span><i class="legend-dot legend-dot--in"></i>รับเข้า</span>
-                    <span><i class="legend-dot legend-dot--out"></i>จ่ายออก</span>
+            </div>
+        </div>
+
+        <div class="carousel-item">
+            <div class="greeting-bar">
+                <h1>ภาพรวมสินค้าและสต็อก</h1>
+                <p>สรุปจำนวนสินค้า สถานะคงเหลือ และความเคลื่อนไหวล่าสุด</p>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-primary h-100">
+                        <div>
+                            <div class="stat-label">สินค้าทั้งหมด</div>
+                            <div class="stat-value">@Model.ActiveProductCount.ToString("N0")</div>
+                            <div class="stat-sub">รายการที่เปิดใช้งาน</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-success h-100">
+                        <div>
+                            <div class="stat-label">สต็อกคงเหลือ</div>
+                            <div class="stat-value">@Model.TotalPieces.ToString("N0")</div>
+                            <div class="stat-sub">ชิ้น จาก @Model.TotalCases.ToString("N0") กระสอบ/ลัง/เส้น</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-boxes"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-warning h-100">
+                        <div>
+                            <div class="stat-label">สินค้าใกล้หมด</div>
+                            <div class="stat-value">@Model.LowStockProductCount.ToString("N0")</div>
+                            <div class="stat-sub">รายการที่ควรติดตาม</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card stat-info h-100">
+                        <div>
+                            <div class="stat-label">รายการเดือนนี้</div>
+                            <div class="stat-value">@Model.MonthTransactionCount.ToString("N0")</div>
+                            <div class="stat-sub">รับเข้าและจ่ายออก</div>
+                        </div>
+                        <div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div>
+                    </div>
                 </div>
             </div>
 
-            @if (Model.DailyMovementChartItems.Count == 0)
-            {
-                <div class="chart-empty">ยังไม่มีรายการเดือนนี้</div>
-            }
-            else
-            {
-                <div class="daily-chart">
-                    @foreach (var item in Model.DailyMovementChartItems)
-                    {
-                        var inHeight = Math.Max((int)Math.Round(item.InPieces * 100.0 / maxDailyMovement), item.InPieces > 0 ? 4 : 0);
-                        var outHeight = Math.Max((int)Math.Round(item.OutPieces * 100.0 / maxDailyMovement), item.OutPieces > 0 ? 4 : 0);
-                        <div class="daily-chart__day" title="วันที่ @item.Label: รับเข้า @item.InPieces.ToString("N0"), จ่ายออก @item.OutPieces.ToString("N0")">
-                            <div class="daily-chart__bars">
-                                <span class="daily-chart__bar daily-chart__bar--in" style="height: @inHeight%;"></span>
-                                <span class="daily-chart__bar daily-chart__bar--out" style="height: @outHeight%;"></span>
+            <div class="row g-3">
+                <div class="col-xl-7">
+                    <div class="chart-card h-100">
+                        <div class="chart-card__header">
+                            <div>
+                                <h2>แนวโน้มการเคลื่อนไหว</h2>
+                                <p>จำนวนรับเข้าและจ่ายออกย้อนหลัง 6 เดือน (ชิ้น)</p>
                             </div>
-                            <div class="daily-chart__label">@item.Label</div>
+                            <div class="chart-legend">
+                                <span><i class="legend-dot legend-dot--trend-in"></i>รับเข้า</span>
+                                <span><i class="legend-dot legend-dot--trend-out"></i>จ่ายออก</span>
+                            </div>
                         </div>
-                    }
+                        <div class="dashboard-trend-chart">
+                            <div class="dashboard-trend-chart__graph">
+                                <div class="dashboard-trend-chart__scale" aria-hidden="true">
+                                    @for (var tick = 0; tick <= 4; tick++)
+                                    {
+                                        var value = Math.Round(maxMonthlyMovement * (4 - tick) / 4d);
+                                        <span>@value.ToString("N0")</span>
+                                    }
+                                </div>
+                                <svg viewBox="0 0 568 210" preserveAspectRatio="none" role="img" aria-label="กราฟแนวโน้มรับเข้าและจ่ายออกย้อนหลัง 6 เดือน">
+                                    <g class="dashboard-trend-chart__grid">
+                                        @for (var tick = 0; tick <= 4; tick++)
+                                        {
+                                            var y = trendChartTop + (trendChartBottom - trendChartTop) * tick / 4;
+                                            <line x1="@trendChartLeft" y1="@y" x2="@trendChartRight" y2="@y"></line>
+                                        }
+                                    </g>
+                                    @if (monthlyInPoints.Count > 0)
+                                    {
+                                        <polyline class="dashboard-trend-chart__line dashboard-trend-chart__line--in" points="@string.Join(" ", monthlyInPoints)"></polyline>
+                                        <polyline class="dashboard-trend-chart__line dashboard-trend-chart__line--out" points="@string.Join(" ", monthlyOutPoints)"></polyline>
+                                    }
+                                    @for (var index = 0; index < Model.MonthlyMovementChartItems.Count; index++)
+                                    {
+                                        var item = Model.MonthlyMovementChartItems[index];
+                                        var x = trendChartLeft + index * (trendChartRight - trendChartLeft) / Math.Max(Model.MonthlyMovementChartItems.Count - 1, 1);
+                                        var inY = trendChartBottom - item.InPieces * (trendChartBottom - trendChartTop) / maxMonthlyMovement;
+                                        var outY = trendChartBottom - item.OutPieces * (trendChartBottom - trendChartTop) / maxMonthlyMovement;
+                                        <circle class="dashboard-trend-chart__point dashboard-trend-chart__point--in" cx="@x" cy="@inY" r="3">
+                                            <title>@item.Label รับเข้า @item.InPieces.ToString("N0") ชิ้น</title>
+                                        </circle>
+                                        <circle class="dashboard-trend-chart__point dashboard-trend-chart__point--out" cx="@x" cy="@outY" r="3">
+                                            <title>@item.Label จ่ายออก @item.OutPieces.ToString("N0") ชิ้น</title>
+                                        </circle>
+                                    }
+                                </svg>
+                            </div>
+                            <div class="dashboard-trend-chart__months">
+                                @foreach (var item in Model.MonthlyMovementChartItems)
+                                {
+                                    <span>@item.Label</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            }
+
+                <div class="col-xl-5">
+                    <div class="chart-card h-100">
+                        <div class="chart-card__header">
+                            <div>
+                                <h2>สัดส่วนสต็อกตามหมวดหมู่</h2>
+                                <p>จำนวนคงเหลือแยกตามหมวดหมู่ (ชิ้น)</p>
+                            </div>
+                            <i class="bi bi-pie-chart"></i>
+                        </div>
+                        @if (distributionTotal == 0)
+                        {
+                            <div class="chart-empty">ยังไม่มีข้อมูลสต็อกสำหรับแสดงกราฟ</div>
+                        }
+                        else
+                        {
+                            <div class="stock-distribution">
+                                <div class="stock-distribution__donut" style="@distributionDonutStyle" role="img" aria-label="สัดส่วนสต็อกตามหมวดหมู่">
+                                    <div class="stock-distribution__center">
+                                        <strong>@distributionTotal.ToString("N0")</strong>
+                                        <span>ชิ้น</span>
+                                    </div>
+                                </div>
+                                <ul class="stock-distribution__legend">
+                                    @for (var index = 0; index < distributionItems.Count; index++)
+                                    {
+                                        var item = distributionItems[index];
+                                        var color = distributionColors[index % distributionColors.Length];
+                                        var percentage = item.QtyPieces * 100d / distributionTotal;
+                                        <li>
+                                            <span class="stock-distribution__name">
+                                                <i style="--distribution-color: @color"></i>
+                                                <span>@item.CategoryName</span>
+                                            </span>
+                                            <span class="stock-distribution__percentage">@percentage.ToString("0.#")%</span>
+                                            <strong>@item.QtyPieces.ToString("N0")</strong>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <div class="carousel-indicators dashboard-section-carousel__indicators">
+        <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="หน้า 1"></button>
+        <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="1" aria-label="หน้า 2"></button>
+    </div>
 </div>
+<button class="dashboard-section-carousel__control dashboard-section-carousel__control--fixed" type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide="next" aria-label="ไปหน้าถัดไป" title="ไปหน้าถัดไป">
+    <i class="bi bi-arrow-right" aria-hidden="true"></i>
+</button>

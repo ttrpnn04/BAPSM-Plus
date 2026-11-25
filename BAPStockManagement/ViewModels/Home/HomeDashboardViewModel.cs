@@ -26,7 +26,11 @@ public class HomeDashboardViewModel
 
     public IReadOnlyList<CategoryStockChartItem> CategoryStockChartItems { get; set; } = [];
 
+    public IReadOnlyList<CategoryStockChartItem> StockDistributionChartItems { get; set; } = [];
+
     public IReadOnlyList<DailyMovementChartItem> DailyMovementChartItems { get; set; } = [];
+
+    public IReadOnlyList<MonthlyMovementChartItem> MonthlyMovementChartItems { get; set; } = [];
 
     public IReadOnlyList<StockAlertItem> LowStockItems { get; set; } = [];
 
@@ -41,6 +45,15 @@ public class CategoryStockChartItem
 }
 
 public class DailyMovementChartItem
+{
+    public string Label { get; set; } = string.Empty;
+
+    public int InPieces { get; set; }
+
+    public int OutPieces { get; set; }
+}
+
+public class MonthlyMovementChartItem
 {
     public string Label { get; set; } = string.Empty;
 

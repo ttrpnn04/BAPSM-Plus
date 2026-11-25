@@ -78,7 +78,7 @@ public class HomeController : Controller
             })
             .ToList();
 
-        var categoryStockChartItems = productStockRows
+        var stockDistributionChartItems = productStockRows
             .GroupBy(r => r.CategoryName)
             .Select(g => new CategoryStockChartItem
             {
@@ -87,8 +87,8 @@ public class HomeController : Controller
             })
             .OrderByDescending(i => i.QtyPieces)
             .ThenBy(i => i.CategoryName)
-            .Take(6)
             .ToList();
+        var categoryStockChartItems = stockDistributionChartItems.Take(6).ToList();
 
         var dailyMovements = await _context.StockTransactions
             .AsNoTracking()
@@ -117,6 +117,41 @@ public class HomeController : Controller
                 return new DailyMovementChartItem
                 {
                     Label = date.Day.ToString("00"),
+                    InPieces = movement?.InPieces ?? 0,
+                    OutPieces = movement?.OutPieces ?? 0
+                };
+            })
+            .ToList();
+
+        var chartStart = monthStart.AddMonths(-5);
+        var monthlyMovements = await _context.StockTransactions
+            .AsNoTracking()
+            .Where(t => t.TxnDate >= chartStart && t.TxnDate <= today)
+            .GroupBy(t => new { t.TxnDate.Year, t.TxnDate.Month })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                InPieces = g
+                    .Where(t => t.TransactionType.Direction > 0)
+                    .Sum(t => (int?)t.QtyPieces) ?? 0,
+                OutPieces = g
+                    .Where(t => t.TransactionType.Direction < 0)
+                    .Sum(t => (int?)t.QtyPieces) ?? 0
+            })
+            .ToListAsync();
+
+        var movementByMonth = monthlyMovements.ToDictionary(i => (i.Year, i.Month));
+        var thaiMonthLabels = new[] { "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค." };
+        var monthlyMovementChartItems = Enumerable.Range(0, 6)
+            .Select(offset =>
+            {
+                var date = monthStart.AddMonths(offset - 5);
+                movementByMonth.TryGetValue((date.Year, date.Month), out var movement);
+
+                return new MonthlyMovementChartItem
+                {
+                    Label = thaiMonthLabels[date.Month - 1],
                     InPieces = movement?.InPieces ?? 0,
                     OutPieces = movement?.OutPieces ?? 0
                 };
@@ -159,7 +194,9 @@ public class HomeController : Controller
             MonthTransactionCount = monthTransactions?.Count ?? 0,
             LastTransactionAt = lastTransactionAt,
             CategoryStockChartItems = categoryStockChartItems,
+            StockDistributionChartItems = stockDistributionChartItems,
             DailyMovementChartItems = dailyMovementChartItems,
+            MonthlyMovementChartItems = monthlyMovementChartItems,
             LowStockItems = lowStockItems,
             OutOfStockItems = outOfStockItems
         });
