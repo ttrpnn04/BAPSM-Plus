@@ -39,6 +39,7 @@ public class HomeController : Controller
 
                 return new
                 {
+                    ProductId = p.ProductId,
                     CategoryName = p.Category.CategoryName,
                     Sku = p.Sku,
                     ProductName = p.ProductName,
@@ -49,6 +50,7 @@ public class HomeController : Controller
                 };
             })
             .ToList();
+        var productStockById = productStockRows.ToDictionary(r => r.ProductId);
 
         var lowStockItems = productStockRows
             .Where(r => StockThresholds.IsLowStock(r.QtyPieces, r.QtyCases))
@@ -253,6 +255,9 @@ public class HomeController : Controller
                     ProductName = row.Row.ProductName,
                     Unit = ProductUnits.Normalize(row.Row.Unit),
                     UsedQuantity = row.CurrentQuantity,
+                    CurrentStock = ProductUnits.IsCaseUnit(row.Row.Unit)
+                        ? productStockById[row.Row.ProductId].QtyCases
+                        : productStockById[row.Row.ProductId].QtyPieces,
                     ChangePercent = changePercent,
                     HasPreviousPeriodUsage = row.PreviousQuantity > 0,
                     TrendBuckets = trendBuckets
@@ -282,6 +287,44 @@ public class HomeController : Controller
             .Select(t => (DateTime?)t.CreatedAt)
             .MaxAsync();
 
+        var outOfStockProductCount = productStockRows.Count(r => StockThresholds.IsOutOfStock(r.QtyPieces, r.QtyCases));
+        var lowStockProductCount = productStockRows.Count(r => StockThresholds.IsLowStock(r.QtyPieces, r.QtyCases));
+        var stockInsights = new List<string>();
+        if (outOfStockProductCount > 0)
+        {
+            stockInsights.Add($"มีสินค้า {outOfStockProductCount:N0} รายการที่หมดสต็อก");
+        }
+
+        if (lowStockProductCount > 0)
+        {
+            stockInsights.Add($"พบสินค้าใกล้หมด {lowStockProductCount:N0} รายการ ตามเกณฑ์เตือนของระบบ");
+        }
+
+        if (topUsedProducts.Count > 0)
+        {
+            var topUsedProduct = topUsedProducts[0];
+            var usageChangeSummary = topUsedProduct.HasPreviousPeriodUsage
+                ? topUsedProduct.ChangePercent.GetValueOrDefault() > 0
+                    ? $"เพิ่มขึ้น {topUsedProduct.ChangePercent.GetValueOrDefault():N0}%"
+                    : topUsedProduct.ChangePercent.GetValueOrDefault() < 0
+                        ? $"ลดลง {Math.Abs(topUsedProduct.ChangePercent.GetValueOrDefault()):N0}%"
+                        : "ทรงตัว"
+                : "ยังไม่มีข้อมูลเปรียบเทียบช่วงก่อน";
+            stockInsights.Add(
+                $"ยอดจ่ายออกสูงสุด 30 วัน: {topUsedProduct.ProductName} {topUsedProduct.UsedQuantity:N0} {topUsedProduct.Unit} ({usageChangeSummary})");
+        }
+
+        if (stockInsights.Count == 0)
+        {
+            stockInsights.Add("ยังไม่พบสินค้าใกล้หมดหรือหมดสต็อก และไม่มีรายการจ่ายออกในช่วง 30 วันที่ผ่านมา");
+        }
+
+        var stockInsightRecommendation = outOfStockProductCount + lowStockProductCount > 0
+            ? "ควรตรวจสอบรายการเร่งด่วนก่อนวางแผนเติมสต็อก"
+            : topUsedProducts.Count > 0
+                ? "ใช้ยอดจ่ายออกย้อนหลัง 30 วันประกอบการวางแผนเติมสต็อก"
+                : "บันทึกรายการจ่ายออกเพื่อเริ่มติดตามแนวโน้มสินค้า";
+
         return View(new HomeDashboardViewModel
         {
             ActiveProductCount = products.Count,
@@ -289,8 +332,8 @@ public class HomeController : Controller
             ActiveVariantCount = productStockRows.Sum(r => r.VariantCount),
             TotalPieces = productStockRows.Sum(r => r.QtyPieces),
             TotalCases = productStockRows.Sum(r => r.QtyCases),
-            OutOfStockProductCount = productStockRows.Count(r => StockThresholds.IsOutOfStock(r.QtyPieces, r.QtyCases)),
-            LowStockProductCount = productStockRows.Count(r => StockThresholds.IsLowStock(r.QtyPieces, r.QtyCases)),
+            OutOfStockProductCount = outOfStockProductCount,
+            LowStockProductCount = lowStockProductCount,
             MonthInPieces = monthTransactions?.InPieces ?? 0,
             MonthOutPieces = monthTransactions?.OutPieces ?? 0,
             MonthTransactionCount = monthTransactions?.Count ?? 0,
@@ -300,6 +343,8 @@ public class HomeController : Controller
             DailyMovementChartItems = dailyMovementChartItems,
             MonthlyMovementChartItems = monthlyMovementChartItems,
             TopUsedProducts = topUsedProducts,
+            StockInsights = stockInsights,
+            StockInsightRecommendation = stockInsightRecommendation,
             LowStockItems = lowStockItems,
             OutOfStockItems = outOfStockItems
         });

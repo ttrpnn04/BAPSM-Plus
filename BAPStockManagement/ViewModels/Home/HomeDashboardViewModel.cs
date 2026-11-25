@@ -34,6 +34,10 @@ public class HomeDashboardViewModel
 
     public IReadOnlyList<TopUsedProductItem> TopUsedProducts { get; set; } = [];
 
+    public IReadOnlyList<string> StockInsights { get; set; } = [];
+
+    public string StockInsightRecommendation { get; set; } = string.Empty;
+
     public IReadOnlyList<StockAlertItem> LowStockItems { get; set; } = [];
 
     public IReadOnlyList<StockAlertItem> OutOfStockItems { get; set; } = [];
@@ -88,6 +92,8 @@ public class TopUsedProductItem
     public string Unit { get; set; } = string.Empty;
 
     public int UsedQuantity { get; set; }
+
+    public int CurrentStock { get; set; }
 
     public decimal? ChangePercent { get; set; }
 
