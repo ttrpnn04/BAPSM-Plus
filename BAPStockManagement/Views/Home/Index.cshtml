@@ -1374,23 +1374,29 @@
                     document.getElementById('smartStockDetailName').textContent =
                         trigger.dataset.productName || trigger.dataset.purchaseName || '';
                     document.getElementById('smartStockDetailCurrent').textContent =
-                        (trigger.dataset.currentStock || trigger.dataset.purchaseCurrent || '0') + ' units';
+                        (trigger.dataset.currentStock || trigger.dataset.purchaseCurrent || '0') + ' หน่วย';
                     document.getElementById('smartStockDetailDemand').textContent =
-                        (trigger.dataset.forecastDemand || trigger.dataset.purchaseDemand || '0') + ' units';
+                        (trigger.dataset.forecastDemand || trigger.dataset.purchaseDemand || '0') + ' หน่วย';
                     document.getElementById('smartStockDetailSafety').textContent =
-                        (trigger.dataset.safetyStock || trigger.dataset.purchaseSafety || '0') + ' units';
+                        (trigger.dataset.safetyStock || trigger.dataset.purchaseSafety || '0') + ' หน่วย';
                     document.getElementById('smartStockDetailRemaining').textContent =
-                        (trigger.dataset.remaining || '0') + ' units';
+                        (trigger.dataset.remaining || '0') + ' หน่วย';
+                    var riskValue = trigger.dataset.riskLevel || trigger.dataset.risk || 'Low';
                     document.getElementById('smartStockDetailRisk').textContent =
-                        trigger.dataset.riskLevel || trigger.dataset.risk || 'Low';
+                        riskValue === 'High' ? 'สูง' : riskValue === 'Medium' ? 'ปานกลาง' : 'ต่ำ';
                     document.getElementById('smartStockDetailScore').textContent =
                         (trigger.dataset.riskScore || '0') + '/100';
                     document.getElementById('smartStockDetailReason').textContent =
                         trigger.dataset.riskReason || 'Prepared sample data indicates this product should be monitored.';
                     document.getElementById('smartStockDetailQuantity').textContent =
-                        (trigger.dataset.purchaseQuantity || '0') + ' units';
+                        (trigger.dataset.purchaseQuantity || '0') + ' หน่วย';
+                    var priorityValue = trigger.dataset.purchasePriority || 'Low';
                     document.getElementById('smartStockDetailPriority').textContent =
-                        'Priority: ' + (trigger.dataset.purchasePriority || 'Low');
+                        'ลำดับความสำคัญ: ' + (
+                            priorityValue === 'Urgent' ? 'เร่งด่วน'
+                            : priorityValue === 'High' ? 'สูง'
+                            : priorityValue === 'Medium' ? 'ปานกลาง'
+                            : 'ต่ำ');
                     document.getElementById('smartStockDetailPurchaseReason').textContent =
                         trigger.dataset.purchaseReason || 'No replenishment quantity is recommended.';
                 });
@@ -1536,8 +1542,8 @@
                         var pointRect = point.getBoundingClientRect();
                         tooltip.innerHTML =
                             '<strong>' + point.dataset.week + '</strong>' +
-                            '<span><i class="smart-stock-tooltip-dot smart-stock-tooltip-dot--actual"></i>Actual Sales: ' + Number(point.dataset.actual).toLocaleString() + '</span>' +
-                            '<span><i class="smart-stock-tooltip-dot smart-stock-tooltip-dot--forecast"></i>Forecast Sales: ' + Number(point.dataset.forecast).toLocaleString() + '</span>';
+                            '<span><i class="smart-stock-tooltip-dot smart-stock-tooltip-dot--actual"></i>ยอดขายจริง: ' + Number(point.dataset.actual).toLocaleString() + '</span>' +
+                            '<span><i class="smart-stock-tooltip-dot smart-stock-tooltip-dot--forecast"></i>ยอดขายคาดการณ์: ' + Number(point.dataset.forecast).toLocaleString() + '</span>';
                         tooltip.classList.add('is-visible');
                         tooltip.style.left = Math.min(
                             Math.max(pointRect.left - rect.left + pointRect.width / 2 - tooltip.offsetWidth / 2, 0),

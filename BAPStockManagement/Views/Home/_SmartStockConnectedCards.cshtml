@@ -11,19 +11,19 @@
         <div class="dashboard-ai-card__heading">
             <span class="dashboard-ai-card__icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
             <div>
-                <span class="dashboard-ai-card__label">DEMO ML · STOCKOUT RISK</span>
-                <h2>AI Stockout Risk Analysis</h2>
+                <span class="dashboard-ai-card__label">DEMO ML · ความเสี่ยงขาดสต็อก</span>
+                <h2>AI วิเคราะห์ความเสี่ยงสินค้าขาดสต็อก</h2>
                 <p>วิเคราะห์จากสต็อกและ forecast demand ตัวอย่าง</p>
             </div>
         </div>
-        <span class="smart-stock-demo-badge">Demo Data</span>
+        <span class="smart-stock-demo-badge">ข้อมูลตัวอย่าง</span>
     </div>
     <div class="dashboard-card__content smart-stock-connected-content">
         <div class="smart-stock-risk-overview">
-            <div><span>Total Products</span><strong>@Model.StockRisks.Count</strong></div>
-            <div class="smart-stock-risk-overview--high"><span>High</span><strong>@highCount</strong></div>
-            <div class="smart-stock-risk-overview--medium"><span>Medium</span><strong>@mediumCount</strong></div>
-            <div class="smart-stock-risk-overview--low"><span>Low</span><strong>@lowCount</strong></div>
+            <div><span>สินค้าทั้งหมด</span><strong>@Model.StockRisks.Count</strong></div>
+            <div class="smart-stock-risk-overview--high"><span>สูง</span><strong>@highCount</strong></div>
+            <div class="smart-stock-risk-overview--medium"><span>ปานกลาง</span><strong>@mediumCount</strong></div>
+            <div class="smart-stock-risk-overview--low"><span>ต่ำ</span><strong>@lowCount</strong></div>
         </div>
         <div class="smart-stock-connected-list">
             @foreach (var item in Model.StockRisks.Take(3))
@@ -33,6 +33,12 @@
                     "High" => "smart-stock-risk-high",
                     "Medium" => "smart-stock-risk-medium",
                     _ => "smart-stock-risk-low"
+                };
+                var riskLabel = item.RiskLevel switch
+                {
+                    "High" => "สูง",
+                    "Medium" => "ปานกลาง",
+                    _ => "ต่ำ"
                 };
                 <button type="button"
                         class="smart-stock-connected-product"
@@ -51,7 +57,7 @@
                         <strong>@item.ProductName</strong>
                         <small>#@item.ProductId · @item.Segment</small>
                     </div>
-                    <span class="smart-stock-risk @riskClass">@item.RiskLevel</span>
+                    <span class="smart-stock-risk @riskClass">@riskLabel</span>
                     <div class="smart-stock-connected-facts">
                         <span>คงเหลือ <strong>@item.CurrentStock</strong></span>
                         <span>Forecast <strong>@item.ForecastDemand</strong></span>
@@ -75,8 +81,8 @@
         <div class="dashboard-ai-card__heading">
             <span class="dashboard-ai-card__icon"><i class="bi bi-cart-plus" aria-hidden="true"></i></span>
             <div>
-                <span class="dashboard-ai-card__label">DEMO ML · PURCHASE</span>
-                <h2>AI Purchase Recommendations</h2>
+                <span class="dashboard-ai-card__label">DEMO ML · คำแนะนำซื้อ</span>
+                <h2>AI คำแนะนำการสั่งซื้อ</h2>
                 <p>คำแนะนำซื้อจากสต็อก Forecast และ Safety Stock</p>
             </div>
         </div>
@@ -86,7 +92,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <div>
-                            <span class="dashboard-ai-card__label">DEMO ML · CONNECTED ANALYSIS</span>
+                            <span class="dashboard-ai-card__label">DEMO ML · การวิเคราะห์เชื่อมโยง</span>
                             <h2 class="modal-title fs-5" id="smartStockCombinedDetailTitle">รายละเอียดความเสี่ยงและคำแนะนำซื้อ</h2>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
@@ -94,40 +100,47 @@
                     <div class="modal-body">
                         <div class="smart-stock-detail-grid">
                             <section>
-                                <h3>Stockout Risk Analysis</h3>
+                                <h3>การวิเคราะห์ความเสี่ยงขาดสต็อก</h3>
                                 <strong id="smartStockDetailName"></strong>
                                 <div class="smart-stock-detail-metrics">
-                                    <span>Current Stock <strong id="smartStockDetailCurrent"></strong></span>
+                                    <span>สต็อกปัจจุบัน <strong id="smartStockDetailCurrent"></strong></span>
                                     <span>Forecast Demand <strong id="smartStockDetailDemand"></strong></span>
                                     <span>Safety Stock <strong id="smartStockDetailSafety"></strong></span>
-                                    <span>Estimated Remaining <strong id="smartStockDetailRemaining"></strong></span>
-                                    <span>Risk Level <strong id="smartStockDetailRisk"></strong></span>
-                                    <span>Risk Score <strong id="smartStockDetailScore"></strong></span>
+                                    <span>สต็อกคงเหลือประมาณ <strong id="smartStockDetailRemaining"></strong></span>
+                                    <span>ระดับความเสี่ยง <strong id="smartStockDetailRisk"></strong></span>
+                                    <span>คะแนนความเสี่ยง <strong id="smartStockDetailScore"></strong></span>
                                 </div>
                                 <p id="smartStockDetailReason"></p>
                             </section>
                             <section>
-                                <h3>Purchase Recommendation</h3>
+                                <h3>คำแนะนำการสั่งซื้อ</h3>
                                 <div class="smart-stock-detail-order">
-                                    <span>Recommended Order Quantity</span>
+                                    <span>จำนวนสั่งซื้อที่แนะนำ</span>
                                     <strong id="smartStockDetailQuantity"></strong>
                                     <small id="smartStockDetailPriority"></small>
                                 </div>
                                 <p id="smartStockDetailPurchaseReason"></p>
-                                <small class="smart-stock-detail-disclaimer">Simulated AI recommendation based on prepared mock data. No purchase order is created.</small>
+                                <small class="smart-stock-detail-disclaimer">คำแนะนำ AI จำลองจากข้อมูลตัวอย่าง ไม่มีการสร้างใบสั่งซื้ออัตโนมัติ</small>
                             </section>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <span class="smart-stock-demo-badge">Simulated</span>
+        <span class="smart-stock-demo-badge">จำลอง</span>
     </div>
     <div class="dashboard-card__content smart-stock-connected-content">
         <div class="smart-stock-purchase-list">
             @foreach (var item in Model.PurchaseRecommendations.Where(item => item.SuggestedQuantity > 0).Take(3))
             {
                 var risk = Model.StockRisks.FirstOrDefault(product => product.ProductId == item.ProductId);
+                var priorityLabel = item.Priority switch
+                {
+                    "Urgent" => "เร่งด่วน",
+                    "High" => "สูง",
+                    "Medium" => "ปานกลาง",
+                    _ => "ต่ำ"
+                };
                 <button type="button"
                         class="smart-stock-purchase-product"
                         data-smart-stock-product="@item.ProductId"
@@ -150,12 +163,12 @@
                         data-bs-target="#smartStockCombinedDetailModal">
                     <div>
                         <strong>@item.ProductName</strong>
-                        <small>@item.Priority Priority</small>
+                        <small>ลำดับความสำคัญ: @priorityLabel</small>
                     </div>
                     <div class="smart-stock-order-quantity">
-                        <span>Recommended</span>
+                        <span>แนะนำสั่งซื้อ</span>
                         <strong>@item.SuggestedQuantity</strong>
-                        <small>units</small>
+                        <small>หน่วย</small>
                     </div>
                     <p>@item.RecommendationReason</p>
                 </button>

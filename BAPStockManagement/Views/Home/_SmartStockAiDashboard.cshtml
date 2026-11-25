@@ -9,25 +9,25 @@
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="stat-card stat-primary h-100">
-                <div><div class="stat-label">Total Products</div><div class="stat-value">@Model.StockRisks.Count</div><div class="stat-sub">Prepared inventory records</div></div>
+                <div><div class="stat-label">สินค้าทั้งหมด</div><div class="stat-value">@Model.StockRisks.Count</div><div class="stat-sub">ข้อมูลสินค้าตัวอย่าง</div></div>
                 <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
             </div>
         </div>
         <div class="col-sm-6 col-xl-3">
             <div class="stat-card stat-danger h-100">
-                <div><div class="stat-label">High Risk</div><div class="stat-value">@Model.StockRisks.Count(item => item.RiskLevel == "High")</div><div class="stat-sub">Immediate review</div></div>
+                <div><div class="stat-label">ความเสี่ยงสูง</div><div class="stat-value">@Model.StockRisks.Count(item => item.RiskLevel == "High")</div><div class="stat-sub">ควรตรวจสอบทันที</div></div>
                 <div class="stat-icon"><i class="bi bi-exclamation-octagon"></i></div>
             </div>
         </div>
         <div class="col-sm-6 col-xl-3">
             <div class="stat-card stat-warning h-100">
-                <div><div class="stat-label">Medium Risk</div><div class="stat-value">@Model.StockRisks.Count(item => item.RiskLevel == "Medium")</div><div class="stat-sub">Prepare replenishment</div></div>
+                <div><div class="stat-label">ความเสี่ยงปานกลาง</div><div class="stat-value">@Model.StockRisks.Count(item => item.RiskLevel == "Medium")</div><div class="stat-sub">เตรียมการเติมสต็อก</div></div>
                 <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
             </div>
         </div>
         <div class="col-sm-6 col-xl-3">
             <div class="stat-card stat-success h-100">
-                <div><div class="stat-label">Low Risk</div><div class="stat-value">@Model.StockRisks.Count(item => item.RiskLevel == "Low")</div><div class="stat-sub">Continue monitoring</div></div>
+                <div><div class="stat-label">ความเสี่ยงต่ำ</div><div class="stat-value">@Model.StockRisks.Count(item => item.RiskLevel == "Low")</div><div class="stat-sub">ติดตามต่อเนื่อง</div></div>
                 <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
             </div>
         </div>
@@ -37,7 +37,7 @@
         <div class="col-sm-6 col-xl-3">
             <div class="stat-card stat-primary h-100">
                 <div>
-                    <div class="stat-label">Actual Sales · Demo</div>
+                    <div class="stat-label">ยอดขายจริง · ข้อมูลตัวอย่าง</div>
                     <div class="stat-value">@Model.ActualSales.ToString("N0")</div>
                     <div class="stat-sub">ยอดขายตัวอย่าง 6 สัปดาห์</div>
                 </div>
@@ -47,9 +47,9 @@
         <div class="col-sm-6 col-xl-3">
             <div class="stat-card stat-info h-100">
                 <div>
-                    <div class="stat-label">Forecast Sales · Demo</div>
+                    <div class="stat-label">ยอดขายคาดการณ์ · ข้อมูลตัวอย่าง</div>
                     <div class="stat-value">@Model.ForecastSales.ToString("N0")</div>
-                    <div class="stat-sub">Sample forecast output</div>
+                    <div class="stat-sub">ผลคาดการณ์ตัวอย่าง</div>
                 </div>
                 <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
             </div>
@@ -57,9 +57,9 @@
         <div class="col-sm-6 col-xl-3">
             <div class="stat-card stat-warning h-100">
                 <div>
-                    <div class="stat-label">Products at Risk · Demo</div>
+                    <div class="stat-label">สินค้าที่เสี่ยง · ข้อมูลตัวอย่าง</div>
                     <div class="stat-value">@Model.ProductsAtRisk.ToString("N0")</div>
-                    <div class="stat-sub">High / Medium / Low</div>
+                    <div class="stat-sub">สูง / ปานกลาง / ต่ำ</div>
                 </div>
                 <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
             </div>
@@ -67,9 +67,9 @@
         <div class="col-sm-6 col-xl-3">
             <div class="stat-card stat-success h-100">
                 <div>
-                    <div class="stat-label">Active ML Model</div>
+                    <div class="stat-label">โมเดล ML ที่ใช้งาน</div>
                     <div class="stat-value smart-stock-model-value">@Model.ModelName</div>
-                    <div class="stat-sub">Demo forecasting model</div>
+                    <div class="stat-sub">โมเดลคาดการณ์ตัวอย่าง</div>
                 </div>
                 <div class="stat-icon"><i class="bi bi-cpu"></i></div>
             </div>
@@ -81,22 +81,31 @@
             <div class="chart-card smart-stock-chart-card h-100">
                 <div class="chart-card__header">
                     <div>
-                        <h2>Weekly Actual vs. Forecast Sales</h2>
-                        <p>Sample forecast · filter by product segment</p>
+                        <h2>ยอดขายจริงเทียบยอดขายคาดการณ์รายสัปดาห์</h2>
+                        <p>ตัวอย่าง Forecast · กรองตามหมวดสินค้า</p>
                     </div>
                     <div class="chart-legend">
-                        <span><i class="legend-dot smart-stock-legend-actual"></i>Actual Sales</span>
-                        <span><i class="legend-dot smart-stock-legend-forecast"></i>Forecast Sales</span>
+                        <span><i class="legend-dot smart-stock-legend-actual"></i>ยอดขายจริง</span>
+                        <span><i class="legend-dot smart-stock-legend-forecast"></i>ยอดขายคาดการณ์</span>
                     </div>
                 </div>
-                <div class="smart-stock-filter" aria-label="Filter by segment">
+                <div class="smart-stock-filter" aria-label="กรองตามหมวดสินค้า">
                     @foreach (var segment in new[] { "All", "Bicycle", "Ride-on", "Tyre", "Pool" })
                     {
+                        var segmentLabel = segment switch
+                        {
+                            "All" => "ทั้งหมด",
+                            "Bicycle" => "จักรยาน",
+                            "Ride-on" => "รถเด็กนั่ง",
+                            "Tyre" => "ยาง",
+                            "Pool" => "สระน้ำ",
+                            _ => segment
+                        };
                         <button type="button"
                                 class="btn btn-sm @(segment == "All" ? "btn-primary" : "btn-outline-secondary")"
                                 data-smart-stock-filter="@segment"
                                 aria-pressed="@(segment == "All" ? "true" : "false")">
-                            @segment
+                            @segmentLabel
                         </button>
                     }
                 </div>
@@ -110,7 +119,7 @@
                             }
                         </g>
                         <g class="smart-stock-chart-y-axis">
-                            <text x="14" y="120" transform="rotate(-90 14 120)" text-anchor="middle" class="smart-stock-axis-title">Sales Quantity</text>
+                            <text x="14" y="120" transform="rotate(-90 14 120)" text-anchor="middle" class="smart-stock-axis-title">จำนวนยอดขาย</text>
                         </g>
                         <g class="smart-stock-chart-vertical-grid"></g>
                         <polyline class="smart-stock-actual-line" fill="none" points=""></polyline>
@@ -127,19 +136,19 @@
             <div class="chart-card h-100">
                 <div class="chart-card__header">
                     <div>
-                        <h2>Model Information</h2>
-                        <p>Selected forecasting model</p>
+                        <h2>ข้อมูลโมเดล</h2>
+                        <p>โมเดล forecasting ที่เลือก</p>
                     </div>
                     <i class="bi bi-cpu"></i>
                 </div>
                 <div class="smart-stock-model-summary">
                     <div>
-                        <span>Model</span>
+                        <span>โมเดล</span>
                         <strong>@Model.ModelName</strong>
                     </div>
                     <div>
-                        <span>Status</span>
-                        <strong>Demo / Illustrative</strong>
+                        <span>สถานะ</span>
+                        <strong>Demo / ตัวอย่าง</strong>
                     </div>
                 </div>
                 <div class="smart-stock-metrics">
@@ -147,11 +156,11 @@
                     {
                         <div>
                             <span>@metric.Name</span>
-                            <strong>@metric.Value</strong>
+                            <strong>@(metric.Value == "Not provided" ? "ยังไม่มีข้อมูล" : metric.Value)</strong>
                         </div>
                     }
                 </div>
-                <p class="smart-stock-demo-note">Evaluation values are not invented. Verify experiment results before displaying numeric metrics.</p>
+                <p class="smart-stock-demo-note">ไม่มีการสร้างค่าประเมินขึ้นเอง กรุณาใช้ผลทดลองที่ยืนยันก่อนแสดงค่าตัวเลข</p>
             </div>
         </div>
     </div>
@@ -161,38 +170,38 @@
             <div class="chart-card h-100">
                 <div class="chart-card__header">
                     <div>
-                        <h2>AI Stockout Risk Analysis</h2>
-                        <p>Sample ML output · not a live prediction</p>
+                        <h2>AI วิเคราะห์ความเสี่ยงสินค้าขาดสต็อก</h2>
+                        <p>ผล ML ตัวอย่าง · ไม่ใช่การคาดการณ์แบบเรียลไทม์</p>
                     </div>
-                    <span class="smart-stock-demo-badge">Demo Data</span>
+                    <span class="smart-stock-demo-badge">ข้อมูลตัวอย่าง</span>
                 </div>
                 <div class="smart-stock-table-controls">
                     <input type="search"
                            class="form-control form-control-sm"
-                           placeholder="Search product"
+                           placeholder="ค้นหาสินค้า"
                            data-smart-stock-search />
                     <select class="form-select form-select-sm" data-smart-stock-risk-filter aria-label="Filter risk level">
-                        <option value="All">All risks</option>
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
+                        <option value="All">ความเสี่ยงทั้งหมด</option>
+                        <option value="High">สูง</option>
+                        <option value="Medium">ปานกลาง</option>
+                        <option value="Low">ต่ำ</option>
                     </select>
                     <select class="form-select form-select-sm" data-smart-stock-sort aria-label="Sort products">
-                        <option value="risk">Sort by risk</option>
-                        <option value="remaining">Sort by remaining stock</option>
-                        <option value="name">Sort by name</option>
+                        <option value="risk">เรียงตามความเสี่ยง</option>
+                        <option value="remaining">เรียงตามสต็อกที่เหลือ</option>
+                        <option value="name">เรียงตามชื่อสินค้า</option>
                     </select>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0 smart-stock-table" data-smart-stock-risk-table>
                         <thead>
                             <tr>
-                                <th>Product</th>
-                                <th>Segment</th>
-                                <th class="text-end">Stock</th>
+                                <th>สินค้า</th>
+                                <th>หมวด</th>
+                                <th class="text-end">สต็อก</th>
                                 <th class="text-end">Demand</th>
-                                <th>Risk</th>
-                                <th>Explanation / action</th>
+                                <th>ความเสี่ยง</th>
+                                <th>เหตุผล / การดำเนินการ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -203,6 +212,12 @@
                                     "High" => "smart-stock-risk-high",
                                     "Medium" => "smart-stock-risk-medium",
                                     _ => "smart-stock-risk-low"
+                                };
+                                var riskLabel = item.RiskLevel switch
+                                {
+                                    "High" => "สูง",
+                                    "Medium" => "ปานกลาง",
+                                    _ => "ต่ำ"
                                 };
                                 var purchase = Model.PurchaseRecommendations.FirstOrDefault(recommendation => recommendation.ProductId == item.ProductId);
                                 <tr data-smart-stock-risk-row
@@ -231,7 +246,7 @@
                                     <td>@item.Segment</td>
                                     <td class="text-end">@item.CurrentStock</td>
                                     <td class="text-end">@item.ForecastDemand</td>
-                                    <td><span class="smart-stock-risk @riskClass">@item.RiskLevel</span></td>
+                                    <td><span class="smart-stock-risk @riskClass">@riskLabel</span></td>
                                     <td>
                                         <span>@item.RiskReason</span>
                                         <small class="d-block text-muted">@item.RecommendedAction</small>
@@ -247,24 +262,31 @@
             <div class="chart-card h-100">
                 <div class="chart-card__header">
                     <div>
-                        <h2>AI Purchase Recommendations</h2>
-                        <p>Illustrative recommendations only</p>
+                        <h2>AI คำแนะนำการสั่งซื้อ</h2>
+                        <p>คำแนะนำตัวอย่างเท่านั้น</p>
                     </div>
-                    <span class="smart-stock-demo-badge">Suggestions</span>
+                    <span class="smart-stock-demo-badge">คำแนะนำ</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0 smart-stock-table">
                         <thead>
                             <tr>
-                                <th>Product</th>
-                                <th class="text-end">Stock</th>
-                                <th class="text-end">Suggested</th>
-                                <th>Priority</th>
+                                <th>สินค้า</th>
+                                <th class="text-end">สต็อก</th>
+                                <th class="text-end">แนะนำซื้อ</th>
+                                <th>ลำดับความสำคัญ</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var item in Model.PurchaseRecommendations)
                             {
+                                var priorityLabel = item.Priority switch
+                                {
+                                    "Urgent" => "เร่งด่วน",
+                                    "High" => "สูง",
+                                    "Medium" => "ปานกลาง",
+                                    _ => "ต่ำ"
+                                };
                                 <tr>
                                     <td>
                                         <strong>@item.ProductName</strong>
@@ -272,7 +294,7 @@
                                     </td>
                                     <td class="text-end">@item.CurrentStock</td>
                                     <td class="text-end fw-semibold">@item.SuggestedQuantity</td>
-                                    <td><span class="smart-stock-priority">@item.Priority</span></td>
+                                    <td><span class="smart-stock-priority">@priorityLabel</span></td>
                                 </tr>
                             }
                         </tbody>
@@ -285,10 +307,10 @@
     <div class="chart-card">
         <div class="chart-card__header">
             <div>
-                <h2>Segment Analysis</h2>
-                <p>Six-week sample totals by product segment</p>
+                <h2>การวิเคราะห์ตามหมวดสินค้า</h2>
+                <p>ยอดรวมตัวอย่าง 12 สัปดาห์แยกตามหมวดสินค้า</p>
             </div>
-            <span class="smart-stock-demo-badge">Demo Data</span>
+            <span class="smart-stock-demo-badge">ข้อมูลตัวอย่าง</span>
         </div>
         <div class="row g-3 smart-stock-segments">
             @foreach (var segment in Model.SegmentSummaries)
@@ -296,10 +318,10 @@
                 <div class="col-sm-6 col-xl-3">
                     <div class="smart-stock-segment-card">
                         <span>@segment.Segment</span>
-                        <strong>Actual @segment.ActualSales.ToString("N0")</strong>
-                        <small>Forecast @segment.ForecastSales.ToString("N0")</small>
+                        <strong>ยอดจริง @segment.ActualSales.ToString("N0")</strong>
+                        <small>ยอดคาดการณ์ @segment.ForecastSales.ToString("N0")</small>
                         <em class="@(segment.Variance >= 0 ? "text-success" : "text-danger")">
-                            @(segment.Variance >= 0 ? "+" : "")@segment.Variance.ToString("N0") variance
+                            ส่วนต่าง @(segment.Variance >= 0 ? "+" : "")@segment.Variance.ToString("N0")
                         </em>
                     </div>
                 </div>

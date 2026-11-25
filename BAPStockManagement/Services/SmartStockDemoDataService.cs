@@ -42,10 +42,10 @@ public static class SmartStockDemoCalculator
                 : "Low";
 
         var explanation = estimatedRemaining < 0
-            ? "Current inventory may not be sufficient to cover the forecast demand. This product should be prioritized for replenishment."
+            ? "สต็อกปัจจุบันอาจไม่เพียงพอต่อยอด demand ที่คาดการณ์ ควรจัดลำดับเติมสต็อกสินค้านี้ก่อน"
             : estimatedRemaining <= input.SafetyStock
-                ? "Forecast demand may leave less stock than the configured safety level. Prepare a replenishment suggestion."
-                : "Current inventory is above forecast demand and the configured safety stock. Continue monitoring.";
+                ? "ยอด demand ที่คาดการณ์อาจทำให้สต็อกเหลือน้อยกว่า Safety Stock ที่กำหนดควรเตรียมคำแนะนำเติมสต็อก"
+                : "สต็อกปัจจุบันสูงกว่า forecast demand และ Safety Stock ที่กำหนด สามารถติดตามต่อได้";
 
         var risk = new SmartStockDemoRiskItem
         {
@@ -60,8 +60,8 @@ public static class SmartStockDemoCalculator
             RiskLevel = riskLevel,
             RiskReason = explanation,
             RecommendedAction = recommendedQuantity > 0
-                ? $"Simulated recommendation: prepare to purchase {recommendedQuantity} units."
-                : "No replenishment quantity is required at this stage."
+                ? $"คำแนะนำจำลอง: เตรียมสั่งซื้อเพิ่ม {recommendedQuantity} หน่วย"
+                : "ยังไม่จำเป็นต้องแนะนำการสั่งซื้อในขั้นตอนนี้",
         };
 
         var purchase = new SmartStockDemoPurchaseItem
@@ -75,8 +75,8 @@ public static class SmartStockDemoCalculator
             SuggestedQuantity = recommendedQuantity,
             Priority = priority,
             RecommendationReason = recommendedQuantity > 0
-                ? $"Calculated as Forecast Demand ({input.ForecastDemand}) + Safety Stock ({input.SafetyStock}) - Current Stock ({input.CurrentStock})."
-                : "Current stock already covers forecast demand and the configured safety stock."
+                ? $"คำนวณจาก Forecast Demand ({input.ForecastDemand}) + Safety Stock ({input.SafetyStock}) - สต็อกปัจจุบัน ({input.CurrentStock})"
+                : "สต็อกปัจจุบันครอบคลุมทั้ง Forecast Demand และ Safety Stock ที่กำหนดแล้ว",
         };
 
         return (risk, purchase);
