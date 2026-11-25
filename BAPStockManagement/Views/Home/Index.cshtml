@@ -219,49 +219,6 @@
                 <p>สรุปจำนวนสินค้า สถานะคงเหลือ และความเคลื่อนไหวล่าสุด</p>
             </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-sm-6 col-xl-3">
-                    <div class="stat-card stat-primary h-100">
-                        <div>
-                            <div class="stat-label">สินค้าทั้งหมด</div>
-                            <div class="stat-value">@Model.ActiveProductCount.ToString("N0")</div>
-                            <div class="stat-sub">รายการที่เปิดใช้งาน</div>
-                        </div>
-                        <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-3">
-                    <div class="stat-card stat-success h-100">
-                        <div>
-                            <div class="stat-label">สต็อกคงเหลือ</div>
-                            <div class="stat-value">@Model.TotalPieces.ToString("N0")</div>
-                            <div class="stat-sub">ชิ้น จาก @Model.TotalCases.ToString("N0") กระสอบ/ลัง/เส้น</div>
-                        </div>
-                        <div class="stat-icon"><i class="bi bi-boxes"></i></div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-3">
-                    <div class="stat-card stat-warning h-100">
-                        <div>
-                            <div class="stat-label">สินค้าใกล้หมด</div>
-                            <div class="stat-value">@Model.LowStockProductCount.ToString("N0")</div>
-                            <div class="stat-sub">รายการที่ควรติดตาม</div>
-                        </div>
-                        <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-3">
-                    <div class="stat-card stat-info h-100">
-                        <div>
-                            <div class="stat-label">รายการเดือนนี้</div>
-                            <div class="stat-value">@Model.MonthTransactionCount.ToString("N0")</div>
-                            <div class="stat-sub">รับเข้าและจ่ายออก</div>
-                        </div>
-                        <div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div>
-                    </div>
-                </div>
-            </div>
-
             <div class="row g-3">
                 <div class="col-xl-7">
                     <div class="chart-card h-100">
