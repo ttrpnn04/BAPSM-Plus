@@ -3646,8 +3646,75 @@ code {
   stroke-width: 1;
 }
 
+.smart-stock-chart-vertical-line {
+  stroke: #EEF0F3;
+  stroke-width: 1;
+}
+
+.smart-stock-axis-title,
+.smart-stock-x-label,
+.smart-stock-chart-y-axis text {
+  fill: var(--text-3);
+  font-family: inherit;
+  font-size: 10px;
+}
+
+.smart-stock-chart-y-axis text:not(.smart-stock-axis-title) {
+  font-size: 9px;
+}
+
+.smart-stock-forecast-chart {
+  position: relative;
+}
+
+.smart-stock-chart-tooltip {
+  position: absolute;
+  z-index: 20;
+  display: none;
+  min-width: 155px;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+  font-size: 0.68rem;
+  pointer-events: none;
+}
+
+.smart-stock-chart-tooltip.is-visible {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.smart-stock-chart-tooltip strong {
+  margin-bottom: 0.12rem;
+}
+
+.smart-stock-chart-tooltip span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.smart-stock-tooltip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.smart-stock-tooltip-dot--actual {
+  background: #1F4E79;
+}
+
+.smart-stock-tooltip-dot--forecast {
+  background: #F2791E;
+}
+
 .smart-stock-actual-line {
-  stroke: #2878D0;
+  stroke: #1F4E79;
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -3656,13 +3723,12 @@ code {
 .smart-stock-forecast-line {
   stroke: #F2791E;
   stroke-width: 3;
-  stroke-dasharray: 8 7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .smart-stock-actual-point {
-  fill: #2878D0;
+  fill: #1F4E79;
   stroke: #FFFFFF;
   stroke-width: 2;
 }
@@ -3674,7 +3740,7 @@ code {
 }
 
 .smart-stock-legend-actual {
-  background: #2878D0;
+  background: #1F4E79;
 }
 
 .smart-stock-legend-forecast {

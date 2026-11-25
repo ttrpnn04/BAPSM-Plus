@@ -1455,7 +1455,10 @@
             var forecastLine = chartRoot.querySelector('.smart-stock-forecast-line');
             var actualPoints = chartRoot.querySelector('.smart-stock-actual-points');
             var forecastPoints = chartRoot.querySelector('.smart-stock-forecast-points');
-            var labelRoot = document.querySelector('[data-smart-stock-chart-labels]');
+            var verticalGrid = chartRoot.querySelector('.smart-stock-chart-vertical-grid');
+            var xAxis = chartRoot.querySelector('.smart-stock-chart-x-axis');
+            var yAxis = chartRoot.querySelector('.smart-stock-chart-y-axis');
+            var tooltip = chartRoot.querySelector('[data-smart-stock-tooltip]');
 
             function getSeries(segment) {
                 var rows = segment === 'All'
@@ -1486,6 +1489,7 @@
                     return Math.max(item.actual, item.forecast);
                 }));
                 maxValue = Math.ceil(maxValue / 100) * 100;
+                var yStep = maxValue / 5;
 
                 function points(property) {
                     return series.map(function (item, index) {
@@ -1499,18 +1503,57 @@
                 forecastLine.setAttribute('points', points('forecast'));
                 actualPoints.innerHTML = '';
                 forecastPoints.innerHTML = '';
+                verticalGrid.innerHTML = '';
+                xAxis.innerHTML = '';
+                Array.prototype.forEach.call(yAxis.querySelectorAll('.smart-stock-y-label'), function (label) {
+                    label.remove();
+                });
+
+                for (var labelIndex = 0; labelIndex <= 5; labelIndex++) {
+                    var labelY = 24 + labelIndex * 40;
+                    var value = maxValue - yStep * labelIndex;
+                    yAxis.insertAdjacentHTML('beforeend',
+                        '<text x="48" y="' + labelY + '" text-anchor="end" class="smart-stock-y-label">' +
+                        Math.max(0, Math.round(value)).toLocaleString() +
+                        '</text>');
+                }
 
                 series.forEach(function (item, index) {
                     var x = left + (right - left) * index / Math.max(series.length - 1, 1);
                     var actualY = bottom - item.actual * (bottom - top) / maxValue;
                     var forecastY = bottom - item.forecast * (bottom - top) / maxValue;
-                    actualPoints.innerHTML += '<circle cx="' + x + '" cy="' + actualY + '" r="4" class="smart-stock-actual-point"><title>Actual ' + item.actual.toLocaleString() + '</title></circle>';
-                    forecastPoints.innerHTML += '<circle cx="' + x + '" cy="' + forecastY + '" r="4" class="smart-stock-forecast-point"><title>Forecast ' + item.forecast.toLocaleString() + '</title></circle>';
+                    var weekLabel = 'W' + (index + 1);
+                    verticalGrid.innerHTML += '<line x1="' + x + '" y1="' + top + '" x2="' + x + '" y2="' + bottom + '" class="smart-stock-chart-vertical-line"></line>';
+                    xAxis.innerHTML += '<text x="' + x + '" y="238" text-anchor="middle" class="smart-stock-x-label">' + weekLabel + '</text>';
+                    actualPoints.innerHTML += '<circle cx="' + x + '" cy="' + actualY + '" r="5" class="smart-stock-actual-point" tabindex="0" data-week="' + weekLabel + '" data-actual="' + item.actual + '" data-forecast="' + item.forecast + '"><title>' + weekLabel + ' Actual Sales: ' + item.actual.toLocaleString() + '</title></circle>';
+                    forecastPoints.innerHTML += '<circle cx="' + x + '" cy="' + forecastY + '" r="5" class="smart-stock-forecast-point" tabindex="0" data-week="' + weekLabel + '" data-actual="' + item.actual + '" data-forecast="' + item.forecast + '"><title>' + weekLabel + ' Forecast Sales: ' + item.forecast.toLocaleString() + '</title></circle>';
                 });
 
-                labelRoot.innerHTML = series.map(function (item) {
-                    return '<span>' + item.week.slice(5).replace('-', '/') + '</span>';
-                }).join('');
+                chartRoot.querySelectorAll('.smart-stock-actual-point, .smart-stock-forecast-point').forEach(function (point) {
+                    var showTooltip = function () {
+                        if (!tooltip) return;
+                        var rect = chartRoot.getBoundingClientRect();
+                        var pointRect = point.getBoundingClientRect();
+                        tooltip.innerHTML =
+                            '<strong>' + point.dataset.week + '</strong>' +
+                            '<span><i class="smart-stock-tooltip-dot smart-stock-tooltip-dot--actual"></i>Actual Sales: ' + Number(point.dataset.actual).toLocaleString() + '</span>' +
+                            '<span><i class="smart-stock-tooltip-dot smart-stock-tooltip-dot--forecast"></i>Forecast Sales: ' + Number(point.dataset.forecast).toLocaleString() + '</span>';
+                        tooltip.classList.add('is-visible');
+                        tooltip.style.left = Math.min(
+                            Math.max(pointRect.left - rect.left + pointRect.width / 2 - tooltip.offsetWidth / 2, 0),
+                            Math.max(rect.width - tooltip.offsetWidth, 0)
+                        ) + 'px';
+                        tooltip.style.top = Math.max(pointRect.top - rect.top - tooltip.offsetHeight - 8, 0) + 'px';
+                    };
+                    point.addEventListener('mouseenter', showTooltip);
+                    point.addEventListener('focus', showTooltip);
+                    point.addEventListener('mouseleave', function () {
+                        if (tooltip) tooltip.classList.remove('is-visible');
+                    });
+                    point.addEventListener('blur', function () {
+                        if (tooltip) tooltip.classList.remove('is-visible');
+                    });
+                });
             }
 
             filterButtons.forEach(function (button) {

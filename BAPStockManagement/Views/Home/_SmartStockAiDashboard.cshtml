@@ -103,19 +103,24 @@
                 <div class="smart-stock-forecast-chart" data-smart-stock-chart>
                     <svg viewBox="0 0 700 240" role="img" aria-label="Weekly actual and forecast sales chart">
                         <g class="smart-stock-chart-grid">
-                            @for (var index = 0; index <= 4; index++)
+                            @for (var index = 0; index <= 5; index++)
                             {
-                                var y = 20 + index * 50;
+                                var y = 20 + index * 40;
                                 <line x1="55" y1="@y" x2="680" y2="@y"></line>
                             }
                         </g>
+                        <g class="smart-stock-chart-y-axis">
+                            <text x="14" y="120" transform="rotate(-90 14 120)" text-anchor="middle" class="smart-stock-axis-title">Sales Quantity</text>
+                        </g>
+                        <g class="smart-stock-chart-vertical-grid"></g>
                         <polyline class="smart-stock-actual-line" fill="none" points=""></polyline>
                         <polyline class="smart-stock-forecast-line" fill="none" points=""></polyline>
                         <g class="smart-stock-actual-points"></g>
                         <g class="smart-stock-forecast-points"></g>
+                        <g class="smart-stock-chart-x-axis"></g>
                     </svg>
+                    <div class="smart-stock-chart-tooltip" data-smart-stock-tooltip role="status" aria-live="polite"></div>
                 </div>
-                <div class="smart-stock-chart-labels" data-smart-stock-chart-labels></div>
             </div>
         </div>
         <div class="col-xl-4">
