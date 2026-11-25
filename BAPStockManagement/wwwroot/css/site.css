@@ -1278,6 +1278,26 @@ code {
   min-width: 0;
 }
 
+#dashboard-smart-restock {
+  border-color: color-mix(in srgb, var(--success) 24%, var(--border));
+  background: var(--success-soft);
+}
+
+#dashboard-ai-alerts {
+  border-color: color-mix(in srgb, var(--danger) 24%, var(--border));
+  background: var(--danger-soft);
+}
+
+.dashboard-restock-count {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--success) 14%, var(--surface));
+  color: var(--success-text);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 .dashboard-card__content {
   flex: 1 1 auto;
   min-width: 0;
@@ -1327,6 +1347,139 @@ code {
 
 .dashboard-ai-product[hidden] {
   display: none !important;
+}
+
+.dashboard-restock-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dashboard-restock-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.dashboard-restock-summary > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.dashboard-restock-summary span {
+  color: var(--text-3);
+  font-size: 0.65rem;
+}
+
+.dashboard-restock-summary strong {
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.dashboard-restock-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.dashboard-restock-notice i {
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+}
+
+.dashboard-restock-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dashboard-restock-product {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0.55rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--primary-soft) 28%, var(--surface));
+}
+
+.dashboard-restock-product__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.dashboard-restock-product__header > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dashboard-restock-product__header strong {
+  color: var(--text-2);
+  font-size: 0.65rem;
+}
+
+.dashboard-restock-product__header > div span {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-restock-product__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 0.65rem;
+}
+
+.dashboard-restock-product__facts > span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  min-width: 0;
+  color: var(--text-3);
+  font-size: 0.64rem;
+}
+
+.dashboard-restock-product__facts strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.dashboard-restock-product > .btn {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.dashboard-restock-footer {
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dashboard-restock-footer .btn {
+  flex: 0 1 auto;
+}
+
+.dashboard-top-used-card {
+  width: 100%;
+  min-width: 0;
 }
 
 .dashboard-usage-table-wrap {
@@ -1849,7 +2002,8 @@ code {
 
 #topUsedDetailsModal .modal-body,
 #stockActionsModal .modal-body,
-#stockPredictionModal .modal-body {
+#stockPredictionModal .modal-body,
+#smartRestockInfoModal .modal-body {
   min-width: 0;
   overflow-x: hidden;
 }
@@ -1898,6 +2052,16 @@ code {
   .dashboard-ai-card__footer {
     flex-basis: auto;
     flex-wrap: wrap;
+  }
+
+  .dashboard-restock-footer {
+    flex-basis: auto;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .dashboard-restock-footer .btn {
+    flex: 1 1 8rem;
   }
 
   .dashboard-top-details__buckets {

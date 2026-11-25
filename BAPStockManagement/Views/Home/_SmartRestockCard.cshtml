@@ -1,0 +1,123 @@
+@model BAPStockManagement.ViewModels.Home.HomeDashboardViewModel
+
+@{
+    var criticalCount = Model.StockActionItems.Count(item =>
+        item.RiskLevel == BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical);
+}
+
+<div id="dashboard-smart-restock" class="chart-card dashboard-insight-card dashboard-card">
+    <div class="chart-card__header">
+        <div>
+            <h2>AI คาดการณ์สินค้าที่ต้องซื้อเพิ่มเข้าสต๊อก</h2>
+            <p>ใช้ยอดจ่ายออกและสต็อกจริงที่มี เพื่อชี้รายการที่ควรตรวจสอบ</p>
+        </div>
+        <span class="dashboard-restock-count">@Model.StockActionItems.Count.ToString("N0") ต้องตรวจสอบ</span>
+    </div>
+    <div class="dashboard-card__content dashboard-restock-content">
+        <div class="dashboard-restock-summary">
+            <div>
+                <span>รายการต้องตรวจสอบ</span>
+                <strong>@Model.StockActionItems.Count.ToString("N0")</strong>
+            </div>
+            <div>
+                <span>เสี่ยงสูง (คาดว่าหมด ≤3 วัน)</span>
+                <strong>@criticalCount.ToString("N0")</strong>
+            </div>
+        </div>
+
+        <div class="dashboard-restock-notice" role="status">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <span>ยังคำนวณจำนวนซื้อไม่ได้: ระบบไม่มี Lead Time, Safety Stock, Target Coverage และยอดรับเข้าหรือจองสินค้า</span>
+        </div>
+
+        @if (Model.StockActionItems.Count == 0)
+        {
+            <div class="chart-empty">ยังไม่มีสินค้าเข้าเกณฑ์เสี่ยงหรือใกล้หมดในขณะนี้</div>
+        }
+        else
+        {
+            <div class="dashboard-restock-list">
+                @foreach (var item in Model.StockActionItems.Take(3))
+                {
+                    var riskLabel = item.RiskLevel switch
+                    {
+                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical => "เสี่ยงสูง",
+                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "เสี่ยง",
+                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "ปกติ",
+                        _ => "ข้อมูลไม่พอ"
+                    };
+                    var riskClass = item.RiskLevel switch
+                    {
+                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical => "dashboard-urgent-product__badge--critical",
+                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "dashboard-urgent-product__badge--warning",
+                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "dashboard-urgent-product__badge--normal",
+                        _ => "dashboard-urgent-product__badge--unknown"
+                    };
+                    var trendLabel = item.SalesTrend switch
+                    {
+                        BAPStockManagement.ViewModels.Home.StockSalesTrend.Increasing => "เพิ่มขึ้น",
+                        BAPStockManagement.ViewModels.Home.StockSalesTrend.Decreasing => "ลดลง",
+                        BAPStockManagement.ViewModels.Home.StockSalesTrend.Stable => "ทรงตัว",
+                        _ => "ข้อมูลไม่พอ"
+                    };
+
+                    <article class="dashboard-restock-product">
+                        <div class="dashboard-restock-product__header">
+                            <div>
+                                <strong>@item.Sku</strong>
+                                <span>@item.ProductName</span>
+                            </div>
+                            <span class="dashboard-urgent-product__badge @riskClass">@riskLabel</span>
+                        </div>
+                        <div class="dashboard-restock-product__facts">
+                            <span>คงเหลือ <strong>@item.CurrentStock.ToString("N0") @item.Unit</strong></span>
+                            <span>
+                                ยอดขายเฉลี่ย
+                                <strong>
+                                    @(item.AverageDailySales.HasValue
+                                        ? $"{item.AverageDailySales.Value.ToString("0.##")} {item.Unit}/วัน"
+                                        : "ข้อมูลไม่พอ")
+                                </strong>
+                            </span>
+                            <span>แนวโน้ม <strong>@trendLabel</strong></span>
+                            <span>แนะนำซื้อ <strong>คำนวณไม่ได้</strong></span>
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#stockPredictionModal"
+                                data-sku="@item.Sku"
+                                data-product="@item.ProductName"
+                                data-stock="@item.CurrentStock"
+                                data-unit="@item.Unit"
+                                data-average="@(item.AverageDailySales?.ToString("0.##") ?? string.Empty)"
+                                data-days="@(item.DaysUntilStockout?.ToString("0.##") ?? string.Empty)"
+                                data-date="@(item.EstimatedStockoutDate?.ToString("dd/MM/yyyy") ?? string.Empty)"
+                                data-risk="@riskLabel"
+                                data-trend="@trendLabel"
+                                data-window="@(item.AnalysisWindowDays?.ToString() ?? string.Empty)"
+                                data-history-available="@item.AnalysisWindowDays.HasValue.ToString().ToLowerInvariant()"
+                                data-recommendation="@item.Recommendation"
+                                data-history="@System.Text.Json.JsonSerializer.Serialize(item.SalesHistory)">
+                            <i class="bi bi-clipboard-data" aria-hidden="true"></i> ดูรายละเอียดการวิเคราะห์
+                        </button>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+    <div class="dashboard-card__footer dashboard-restock-footer">
+        <button type="button"
+                class="btn btn-sm btn-outline-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#stockActionsModal">
+            <i class="bi bi-list-ul" aria-hidden="true"></i> ดูสินค้าทั้งหมด
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary"
+                data-bs-toggle="modal"
+                data-bs-target="#smartRestockInfoModal">
+            <i class="bi bi-cart-plus" aria-hidden="true"></i> สร้างรายการสั่งซื้อ
+        </button>
+    </div>
+</div>
