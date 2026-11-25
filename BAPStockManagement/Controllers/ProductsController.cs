@@ -160,12 +160,13 @@ public class ProductsController : Controller
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = $"สร้างสินค้า {product.ProductName} สำเร็จ ({variantNames.Count} สี/รุ่น)";
+        var successMessage = $"สร้างสินค้า {product.ProductName} สำเร็จ ({variantNames.Count} สี/รุ่น)";
         if (isAjax)
         {
-            return Ok(new { success = true, message = TempData["Success"] });
+            return Ok(new { success = true, message = successMessage });
         }
 
+        TempData["Success"] = successMessage;
         return RedirectToAction(nameof(Index));
     }
 

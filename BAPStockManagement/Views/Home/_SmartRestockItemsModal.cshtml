@@ -1,0 +1,57 @@
+@model BAPStockManagement.ViewModels.Home.HomeDashboardViewModel
+
+<div class="modal fade" id="smartRestockItemsModal" tabindex="-1" aria-labelledby="smartRestockItemsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title fs-5" id="smartRestockItemsModalTitle">รายการสินค้าที่ AI จัดลำดับให้ตรวจสอบ</h2>
+                    <p class="stock-prediction-modal__subtitle mb-0">@Model.SmartRestockItems.Count.ToString("N0") รายการ จากประวัติสต็อกและยอดจ่ายออกจริง</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
+                @if (Model.SmartRestockItems.Count == 0)
+                {
+                    <div class="chart-empty">ยังไม่มีสินค้าที่ต้องตรวจสอบ</div>
+                }
+                else
+                {
+                    <div class="dashboard-ai-modal-list">
+                        @foreach (var item in Model.SmartRestockItems)
+                        {
+                            var priorityClass = item.Priority switch
+                            {
+                                BAPStockManagement.ViewModels.Home.SmartRestockPriority.Urgent => "smart-restock-priority--urgent",
+                                BAPStockManagement.ViewModels.Home.SmartRestockPriority.Prepare => "smart-restock-priority--prepare",
+                                _ => "smart-restock-priority--monitor"
+                            };
+
+                            <article class="dashboard-ai-modal-item">
+                                <div class="dashboard-ai-modal-item__header">
+                                    <div class="dashboard-ai-modal-item__identity">
+                                        <strong>@item.Prediction.Sku</strong>
+                                        <span>@item.Prediction.ProductName</span>
+                                    </div>
+                                    <span class="smart-restock-priority @priorityClass">@item.PriorityLabel</span>
+                                </div>
+                                <div class="dashboard-ai-modal-item__facts">
+                                    <span>คงเหลือ <strong>@item.Prediction.CurrentStock.ToString("N0") @item.Prediction.Unit</strong></span>
+                                    <span>ยอดขายเฉลี่ย <strong>@(item.Prediction.AverageDailySales.HasValue ? $"{item.Prediction.AverageDailySales.Value.ToString("0.##")} {item.Prediction.Unit}/วัน" : "ข้อมูลไม่พอ")</strong></span>
+                                    <span>รับเข้า 30 วัน <strong>@item.InboundTrend.Recent30DayQuantity.ToString("N0") @item.Prediction.Unit</strong></span>
+                                    <span>แนวโน้มรับเข้า <strong>@item.InboundTrendLabel</strong></span>
+                                    @if (item.Prediction.DaysUntilStockout.HasValue)
+                                    {
+                                        <span>คาดว่าจะหมดใน <strong>@Math.Ceiling(item.Prediction.DaysUntilStockout.Value).ToString("N0") วัน</strong></span>
+                                    }
+                                </div>
+                                <p class="dashboard-ai-modal-item__recommendation">@item.DecisionReason</p>
+                                <partial name="_SmartRestockAnalysisButton" model="item" />
+                            </article>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

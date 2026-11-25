@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BAPStockManagement.Models;
+using BAPStockManagement.Services;
 
 namespace BAPStockManagement.Controllers;
 
@@ -12,10 +13,17 @@ namespace BAPStockManagement.Controllers;
 public class HomeController : Controller
 {
     private readonly BAPStockContext _context;
+    private readonly StockPredictionService _stockPredictionService;
+    private readonly ISmartStockDemoDataProvider _smartStockDemoDataProvider;
 
-    public HomeController(BAPStockContext context)
+    public HomeController(
+        BAPStockContext context,
+        StockPredictionService stockPredictionService,
+        ISmartStockDemoDataProvider smartStockDemoDataProvider)
     {
         _context = context;
+        _stockPredictionService = stockPredictionService;
+        _smartStockDemoDataProvider = smartStockDemoDataProvider;
     }
 
     public async Task<IActionResult> Index()
@@ -31,6 +39,7 @@ public class HomeController : Controller
                 .ThenInclude(v => v.StockBalance)
             .Where(p => p.IsActive && p.Category.IsActive)
             .ToListAsync();
+        var stockPredictions = await _stockPredictionService.GetPredictionsAsync(products, today);
 
         var productStockRows = products
             .Select(p =>
@@ -39,14 +48,46 @@ public class HomeController : Controller
 
                 return new
                 {
+                    ProductId = p.ProductId,
                     CategoryName = p.Category.CategoryName,
                     Sku = p.Sku,
                     ProductName = p.ProductName,
+                    Unit = ProductUnits.Normalize(p.Unit),
                     VariantCount = activeVariants.Count,
                     QtyPieces = activeVariants.Sum(v => v.StockBalance?.QtyPieces ?? 0),
                     QtyCases = activeVariants.Sum(v => v.StockBalance?.QtyCases ?? 0)
                 };
             })
+            .ToList();
+        var productStockById = productStockRows.ToDictionary(r => r.ProductId);
+        var lowStockProductIds = productStockRows
+            .Where(row => StockThresholds.IsLowStock(row.QtyPieces, row.QtyCases))
+            .Select(row => row.ProductId)
+            .ToHashSet();
+        foreach (var prediction in stockPredictions)
+        {
+            prediction.IsLowStock = lowStockProductIds.Contains(prediction.ProductId);
+        }
+        var stockActionItems = stockPredictions
+            .Where(prediction =>
+                prediction.IsLowStock ||
+                prediction.RiskLevel is StockRiskLevel.Critical or StockRiskLevel.Warning)
+            .OrderBy(prediction => prediction.RiskLevel switch
+            {
+                StockRiskLevel.Critical => 0,
+                StockRiskLevel.Warning => 1,
+                _ => 2
+            })
+            .ThenBy(prediction => prediction.DaysUntilStockout ?? decimal.MaxValue)
+            .ThenBy(prediction => prediction.ProductName)
+            .ToList();
+        var inboundTrends = await _stockPredictionService.GetInboundTrendsAsync(products, today);
+        var smartRestockItems = stockPredictions
+            .Select(item => SmartRestockDecisionCalculator.Analyze(item, inboundTrends[item.ProductId]))
+            .Where(item => item.Priority != SmartRestockPriority.Monitor)
+            .OrderBy(item => item.Priority)
+            .ThenBy(item => item.Prediction.DaysUntilStockout ?? decimal.MaxValue)
+            .ThenBy(item => item.Prediction.ProductName)
             .ToList();
 
         var lowStockItems = productStockRows
@@ -59,6 +100,7 @@ public class HomeController : Controller
                 CategoryName = r.CategoryName,
                 Sku = r.Sku,
                 ProductName = r.ProductName,
+                Unit = r.Unit,
                 QtyPieces = r.QtyPieces,
                 QtyCases = r.QtyCases
             })
@@ -73,12 +115,13 @@ public class HomeController : Controller
                 CategoryName = r.CategoryName,
                 Sku = r.Sku,
                 ProductName = r.ProductName,
+                Unit = r.Unit,
                 QtyPieces = r.QtyPieces,
                 QtyCases = r.QtyCases
             })
             .ToList();
 
-        var categoryStockChartItems = productStockRows
+        var stockDistributionChartItems = productStockRows
             .GroupBy(r => r.CategoryName)
             .Select(g => new CategoryStockChartItem
             {
@@ -87,8 +130,8 @@ public class HomeController : Controller
             })
             .OrderByDescending(i => i.QtyPieces)
             .ThenBy(i => i.CategoryName)
-            .Take(6)
             .ToList();
+        var categoryStockChartItems = stockDistributionChartItems.Take(6).ToList();
 
         var dailyMovements = await _context.StockTransactions
             .AsNoTracking()
@@ -123,6 +166,143 @@ public class HomeController : Controller
             })
             .ToList();
 
+        var chartStart = monthStart.AddMonths(-5);
+        var monthlyMovements = await _context.StockTransactions
+            .AsNoTracking()
+            .Where(t => t.TxnDate >= chartStart && t.TxnDate <= today)
+            .GroupBy(t => new { t.TxnDate.Year, t.TxnDate.Month })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                InPieces = g
+                    .Where(t => t.TransactionType.Direction > 0)
+                    .Sum(t => (int?)t.QtyPieces) ?? 0,
+                OutPieces = g
+                    .Where(t => t.TransactionType.Direction < 0)
+                    .Sum(t => (int?)t.QtyPieces) ?? 0
+            })
+            .ToListAsync();
+
+        var movementByMonth = monthlyMovements.ToDictionary(i => (i.Year, i.Month));
+        var thaiMonthLabels = new[] { "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค." };
+        var monthlyMovementChartItems = Enumerable.Range(0, 6)
+            .Select(offset =>
+            {
+                var date = monthStart.AddMonths(offset - 5);
+                movementByMonth.TryGetValue((date.Year, date.Month), out var movement);
+
+                return new MonthlyMovementChartItem
+                {
+                    Label = thaiMonthLabels[date.Month - 1],
+                    InPieces = movement?.InPieces ?? 0,
+                    OutPieces = movement?.OutPieces ?? 0
+                };
+            })
+            .ToList();
+
+        var recentUsageStart = today.AddDays(-29);
+        var previousUsageStart = recentUsageStart.AddDays(-30);
+        var productUsageRows = await _context.StockTransactions
+            .AsNoTracking()
+            .Where(t =>
+                t.TxnDate >= previousUsageStart &&
+                t.TxnDate <= today &&
+                t.TransactionType.Direction < 0 &&
+                t.Variant.IsActive &&
+                t.Variant.Product.IsActive &&
+                t.Variant.Product.Category.IsActive)
+            .GroupBy(t => new
+            {
+                t.Variant.ProductId,
+                t.Variant.Product.Sku,
+                t.Variant.Product.ProductName,
+                t.Variant.Product.Unit
+            })
+            .Select(g => new
+            {
+                g.Key.ProductId,
+                g.Key.Sku,
+                g.Key.ProductName,
+                g.Key.Unit,
+                CurrentPieces = g
+                    .Where(t => t.TxnDate >= recentUsageStart)
+                    .Sum(t => (int?)t.QtyPieces) ?? 0,
+                CurrentCases = g
+                    .Where(t => t.TxnDate >= recentUsageStart)
+                    .Sum(t => (int?)t.QtyCases) ?? 0,
+                PreviousPieces = g
+                    .Where(t => t.TxnDate < recentUsageStart)
+                    .Sum(t => (int?)t.QtyPieces) ?? 0,
+                PreviousCases = g
+                    .Where(t => t.TxnDate < recentUsageStart)
+                    .Sum(t => (int?)t.QtyCases) ?? 0
+            })
+            .ToListAsync();
+
+        var topUsageRows = productUsageRows
+            .Select(row => new
+            {
+                Row = row,
+                CurrentQuantity = ProductUnits.IsCaseUnit(row.Unit) ? row.CurrentCases : row.CurrentPieces,
+                PreviousQuantity = ProductUnits.IsCaseUnit(row.Unit) ? row.PreviousCases : row.PreviousPieces
+            })
+            .Where(row => row.CurrentQuantity > 0)
+            .OrderByDescending(row => row.CurrentQuantity)
+            .ThenBy(row => row.Row.ProductName)
+            .Take(5)
+            .ToList();
+        var topProductIds = topUsageRows.Select(row => row.Row.ProductId).ToArray();
+
+        var topProductDailyUsage = await _context.StockTransactions
+            .AsNoTracking()
+            .Where(t =>
+                topProductIds.Contains(t.Variant.ProductId) &&
+                t.TxnDate >= recentUsageStart &&
+                t.TxnDate <= today &&
+                t.TransactionType.Direction < 0 &&
+                t.Variant.IsActive)
+            .GroupBy(t => new { t.Variant.ProductId, t.TxnDate })
+            .Select(g => new
+            {
+                g.Key.ProductId,
+                g.Key.TxnDate,
+                OutPieces = g.Sum(t => (int?)t.QtyPieces) ?? 0,
+                OutCases = g.Sum(t => (int?)t.QtyCases) ?? 0
+            })
+            .ToListAsync();
+
+        var topUsedProducts = topUsageRows
+            .Select(row =>
+            {
+                var trendBuckets = new int[6];
+                foreach (var dailyUsage in topProductDailyUsage.Where(item => item.ProductId == row.Row.ProductId))
+                {
+                    var bucketIndex = Math.Min((dailyUsage.TxnDate.DayNumber - recentUsageStart.DayNumber) / 5, 5);
+                    var quantity = ProductUnits.IsCaseUnit(row.Row.Unit) ? dailyUsage.OutCases : dailyUsage.OutPieces;
+                    trendBuckets[bucketIndex] += quantity;
+                }
+
+                var changePercent = row.PreviousQuantity == 0
+                    ? (decimal?)null
+                    : Math.Round((row.CurrentQuantity - row.PreviousQuantity) * 100m / row.PreviousQuantity);
+
+                return new TopUsedProductItem
+                {
+                    Sku = row.Row.Sku,
+                    ProductName = row.Row.ProductName,
+                    Unit = ProductUnits.Normalize(row.Row.Unit),
+                    UsedQuantity = row.CurrentQuantity,
+                    CurrentStock = ProductUnits.IsCaseUnit(row.Row.Unit)
+                        ? productStockById[row.Row.ProductId].QtyCases
+                        : productStockById[row.Row.ProductId].QtyPieces,
+                    ChangePercent = changePercent,
+                    HasPreviousPeriodUsage = row.PreviousQuantity > 0,
+                    TrendBuckets = trendBuckets
+                };
+            })
+            .ToList();
+
         var monthTransactions = await _context.StockTransactions
             .AsNoTracking()
             .Include(t => t.TransactionType)
@@ -145,6 +325,44 @@ public class HomeController : Controller
             .Select(t => (DateTime?)t.CreatedAt)
             .MaxAsync();
 
+        var outOfStockProductCount = productStockRows.Count(r => StockThresholds.IsOutOfStock(r.QtyPieces, r.QtyCases));
+        var lowStockProductCount = productStockRows.Count(r => StockThresholds.IsLowStock(r.QtyPieces, r.QtyCases));
+        var stockInsights = new List<string>();
+        if (outOfStockProductCount > 0)
+        {
+            stockInsights.Add($"มีสินค้า {outOfStockProductCount:N0} รายการที่หมดสต็อก");
+        }
+
+        if (lowStockProductCount > 0)
+        {
+            stockInsights.Add($"พบสินค้าใกล้หมด {lowStockProductCount:N0} รายการ ตามเกณฑ์เตือนของระบบ");
+        }
+
+        if (topUsedProducts.Count > 0)
+        {
+            var topUsedProduct = topUsedProducts[0];
+            var usageChangeSummary = topUsedProduct.HasPreviousPeriodUsage
+                ? topUsedProduct.ChangePercent.GetValueOrDefault() > 0
+                    ? $"เพิ่มขึ้น {topUsedProduct.ChangePercent.GetValueOrDefault():N0}%"
+                    : topUsedProduct.ChangePercent.GetValueOrDefault() < 0
+                        ? $"ลดลง {Math.Abs(topUsedProduct.ChangePercent.GetValueOrDefault()):N0}%"
+                        : "ทรงตัว"
+                : "ยังไม่มีข้อมูลเปรียบเทียบช่วงก่อน";
+            stockInsights.Add(
+                $"ยอดจ่ายออกสูงสุด 30 วัน: {topUsedProduct.ProductName} {topUsedProduct.UsedQuantity:N0} {topUsedProduct.Unit} ({usageChangeSummary})");
+        }
+
+        if (stockInsights.Count == 0)
+        {
+            stockInsights.Add("ยังไม่พบสินค้าใกล้หมดหรือหมดสต็อก และไม่มีรายการจ่ายออกในช่วง 30 วันที่ผ่านมา");
+        }
+
+        var stockInsightRecommendation = outOfStockProductCount + lowStockProductCount > 0
+            ? "ควรตรวจสอบรายการเร่งด่วนก่อนวางแผนเติมสต็อก"
+            : topUsedProducts.Count > 0
+                ? "ใช้ยอดจ่ายออกย้อนหลัง 30 วันประกอบการวางแผนเติมสต็อก"
+                : "บันทึกรายการจ่ายออกเพื่อเริ่มติดตามแนวโน้มสินค้า";
+
         return View(new HomeDashboardViewModel
         {
             ActiveProductCount = products.Count,
@@ -152,16 +370,30 @@ public class HomeController : Controller
             ActiveVariantCount = productStockRows.Sum(r => r.VariantCount),
             TotalPieces = productStockRows.Sum(r => r.QtyPieces),
             TotalCases = productStockRows.Sum(r => r.QtyCases),
-            OutOfStockProductCount = productStockRows.Count(r => StockThresholds.IsOutOfStock(r.QtyPieces, r.QtyCases)),
-            LowStockProductCount = productStockRows.Count(r => StockThresholds.IsLowStock(r.QtyPieces, r.QtyCases)),
+            OutOfStockProductCount = outOfStockProductCount,
+            LowStockProductCount = lowStockProductCount,
             MonthInPieces = monthTransactions?.InPieces ?? 0,
             MonthOutPieces = monthTransactions?.OutPieces ?? 0,
             MonthTransactionCount = monthTransactions?.Count ?? 0,
             LastTransactionAt = lastTransactionAt,
             CategoryStockChartItems = categoryStockChartItems,
+            StockDistributionChartItems = stockDistributionChartItems,
             DailyMovementChartItems = dailyMovementChartItems,
+            MonthlyMovementChartItems = monthlyMovementChartItems,
+            TopUsedProducts = topUsedProducts,
+            StockInsights = stockInsights,
+            StockInsightRecommendation = stockInsightRecommendation,
             LowStockItems = lowStockItems,
-            OutOfStockItems = outOfStockItems
+            StockPredictions = stockPredictions,
+            StockActionItems = stockActionItems,
+            SmartRestockItems = smartRestockItems,
+            StockAnalysisCount = stockPredictions.Count,
+            CriticalPredictionCount = stockPredictions.Count(prediction => prediction.RiskLevel == StockRiskLevel.Critical),
+            StockoutWithinSevenDaysCount = stockPredictions.Count(prediction =>
+                prediction.DaysUntilStockout.HasValue && prediction.DaysUntilStockout <= 7),
+            IncreasingSalesTrendCount = stockPredictions.Count(prediction => prediction.SalesTrend == StockSalesTrend.Increasing),
+            OutOfStockItems = outOfStockItems,
+            SmartStockDemo = _smartStockDemoDataProvider.GetDashboardData()
         });
     }
 

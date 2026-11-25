@@ -1,0 +1,43 @@
+@model BAPStockManagement.ViewModels.Home.SmartRestockItemViewModel
+
+@{
+    var item = Model.Prediction;
+    var riskLabel = item.RiskLevel switch
+    {
+        BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical => "วิกฤต",
+        BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "เสี่ยงสูง",
+        BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "เฝ้าระวัง",
+        _ => "ข้อมูลไม่พอ"
+    };
+    var salesTrendLabel = item.SalesTrend switch
+    {
+        BAPStockManagement.ViewModels.Home.StockSalesTrend.Increasing => "เพิ่มขึ้น",
+        BAPStockManagement.ViewModels.Home.StockSalesTrend.Decreasing => "ลดลง",
+        BAPStockManagement.ViewModels.Home.StockSalesTrend.Stable => "ทรงตัว",
+        _ => "ข้อมูลไม่พอ"
+    };
+}
+
+<button type="button"
+        class="btn btn-sm btn-outline-primary dashboard-restock-analysis-trigger"
+        data-smart-restock-analysis
+        data-sku="@item.Sku"
+        data-product="@item.ProductName"
+        data-stock="@item.CurrentStock"
+        data-unit="@item.Unit"
+        data-average="@(item.AverageDailySales?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)"
+        data-days="@(item.DaysUntilStockout?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)"
+        data-date="@(item.EstimatedStockoutDate?.ToString("dd/MM/yyyy") ?? string.Empty)"
+        data-risk="@riskLabel"
+        data-sales-trend="@salesTrendLabel"
+        data-window="@(item.AnalysisWindowDays?.ToString() ?? string.Empty)"
+        data-history-available="@item.AnalysisWindowDays.HasValue.ToString().ToLowerInvariant()"
+        data-inbound-trend="@Model.InboundTrendLabel"
+        data-inbound-recent="@Model.InboundTrend.Recent30DayQuantity"
+        data-inbound-previous="@Model.InboundTrend.Previous30DayQuantity"
+        data-inbound-history="@System.Text.Json.JsonSerializer.Serialize(Model.InboundTrend.History)"
+        data-priority="@Model.PriorityLabel"
+        data-decision-reason="@Model.DecisionReason"
+        data-recommendation="@item.Recommendation">
+    <i class="bi bi-clipboard-data" aria-hidden="true"></i> ดูรายละเอียดการวิเคราะห์
+</button>

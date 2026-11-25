@@ -1,0 +1,81 @@
+@model BAPStockManagement.ViewModels.Home.HomeDashboardViewModel
+
+<div class="chart-card dashboard-insight-card dashboard-top-used-card mb-4">
+    <div class="chart-card__header">
+        <div>
+            <h2>Top 5 สินค้าที่มีการใช้มากที่สุด</h2>
+            <p>ยอดจ่ายออกย้อนหลัง 30 วัน พร้อมเทียบ 30 วันก่อนหน้า</p>
+        </div>
+        <i class="bi bi-graph-up-arrow"></i>
+    </div>
+    <div class="dashboard-card__content">
+        @if (Model.TopUsedProducts.Count == 0)
+        {
+            <div class="chart-empty">ยังไม่มีรายการจ่ายออกในช่วง 30 วันที่ผ่านมา</div>
+        }
+        else
+        {
+            <div class="dashboard-usage-table-wrap">
+                <table class="dashboard-usage-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">สินค้า</th>
+                            <th scope="col" class="text-end">ยอดใช้ (30 วัน)</th>
+                            <th scope="col" class="text-end">แนวโน้ม</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var index = 0; index < Model.TopUsedProducts.Count; index++)
+                        {
+                            var item = Model.TopUsedProducts[index];
+                            var maxTrend = Math.Max(item.TrendBuckets.DefaultIfEmpty(0).Max(), 1);
+                            var trendPoints = string.Join(" ", item.TrendBuckets.Select((value, pointIndex) =>
+                                $"{pointIndex * 10},{28 - (int)Math.Round(value * 24d / maxTrend)}"));
+                            var changeValue = item.ChangePercent.GetValueOrDefault();
+                            var trendClass = !item.HasPreviousPeriodUsage || changeValue > 0
+                                ? "dashboard-usage-trend--up"
+                                : changeValue < 0
+                                    ? "dashboard-usage-trend--down"
+                                    : "dashboard-usage-trend--steady";
+
+                            <tr>
+                                <td class="dashboard-usage-rank">@(index + 1)</td>
+                                <td>
+                                    <div class="dashboard-usage-product">
+                                        <strong>@item.ProductName</strong>
+                                        <span>@item.Sku</span>
+                                    </div>
+                                </td>
+                                <td class="dashboard-usage-quantity">
+                                    <strong>@item.UsedQuantity.ToString("N0")</strong>
+                                    <span>@item.Unit</span>
+                                </td>
+                                <td>
+                                    <div class="dashboard-usage-trend @trendClass">
+                                        <svg viewBox="0 0 50 30" role="img" aria-label="แนวโน้มการจ่ายออกในช่วง 30 วัน">
+                                            <polyline points="@trendPoints"></polyline>
+                                        </svg>
+                                        @if (!item.HasPreviousPeriodUsage)
+                                        {
+                                            <span>เริ่มใช้</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@(changeValue > 0 ? "↑" : changeValue < 0 ? "↓" : "→") @Math.Abs(changeValue).ToString("N0")%</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+    <div class="dashboard-card__footer">
+        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#topUsedDetailsModal">
+            <i class="bi bi-clipboard-data" aria-hidden="true"></i> ดูรายละเอียดเพิ่มเติม
+        </button>
+    </div>
+</div>

@@ -100,159 +100,163 @@ public class ImportController : Controller
 
             var receiveTypeId = await GetOrCreateReceiveTypeAsync();
             var userId = _userManager.GetUserId(User);
-            var categoryCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var importRef = $"DEPLOY-{DateTime.Now:yyyyMMddHHmmss}";
             var openingDate = DateOnly.FromDateTime(DateTime.Today);
 
-            var createdProducts = 0;
-            var importedProducts = 0;
-            var createdVariants = 0;
-            var openingTransactions = 0;
-            var totalPieces = 0;
-            var totalCases = 0;
-            var skippedNoStock = 0;
-            var excelExactTargets = new Dictionary<int, ExcelStockTarget>();
-
-            await using var tx = await _context.Database.BeginTransactionAsync();
-            try
+            return await _context.ExecuteWithRetryAsync<IActionResult>(async () =>
             {
-                foreach (var row in parsed.Rows)
+                var categoryCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+                var createdProducts = 0;
+                var importedProducts = 0;
+                var createdVariants = 0;
+                var openingTransactions = 0;
+                var totalPieces = 0;
+                var totalCases = 0;
+                var skippedNoStock = 0;
+                var excelExactTargets = new Dictionary<int, ExcelStockTarget>();
+
+                await using var tx = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    var rowHasQuantity = row.Variants.Any(v => v.QtyPieces > 0 || v.QtyCases > 0);
-                    if (!model.IncludeZeroStockProducts && !rowHasQuantity)
+                    foreach (var row in parsed.Rows)
                     {
-                        var existingProduct = await _context.Products.AnyAsync(p =>
-                            p.Sku == row.Sku && p.ProductName == row.ProductName);
-                        if (!existingProduct)
+                        var rowHasQuantity = row.Variants.Any(v => v.QtyPieces > 0 || v.QtyCases > 0);
+                        if (!model.IncludeZeroStockProducts && !rowHasQuantity)
                         {
-                            skippedNoStock++;
-                            continue;
+                            var existingProduct = await _context.Products.AnyAsync(p =>
+                                p.Sku == row.Sku && p.ProductName == row.ProductName);
+                            if (!existingProduct)
+                            {
+                                skippedNoStock++;
+                                continue;
+                            }
+                        }
+
+                        if (!categoryCache.TryGetValue(row.CategoryName, out var categoryId))
+                        {
+                            categoryId = await GetOrCreateCategoryAsync(
+                                row.CategoryName,
+                                ProductCatalogRules.UsesStandardVariant(row.CategoryName, row.ProductName)
+                                    ? "หน่วย"
+                                    : "สี");
+                            categoryCache[row.CategoryName] = categoryId;
+                        }
+
+                        var (product, createdProduct) = await GetOrCreateProductAsync(
+                            categoryId,
+                            row.Sku,
+                            row.ProductName,
+                            row.Unit);
+                        importedProducts++;
+                        if (createdProduct)
+                        {
+                            createdProducts++;
+                        }
+
+                        totalPieces += row.Variants.Sum(v => v.QtyPieces);
+                        totalCases += row.Variants.Sum(v => v.QtyCases);
+
+                        foreach (var variant in row.Variants)
+                        {
+                            var (variantEntity, createdVariant) = await GetOrCreateVariantAsync(product, variant.Name);
+                            if (createdVariant)
+                            {
+                                createdVariants++;
+                            }
+
+                            excelExactTargets[variantEntity.VariantId] = new ExcelStockTarget(
+                                product.ProductId,
+                                variant.QtyPieces,
+                                variant.QtyCases);
                         }
                     }
 
-                    if (!categoryCache.TryGetValue(row.CategoryName, out var categoryId))
-                    {
-                        categoryId = await GetOrCreateCategoryAsync(
-                            row.CategoryName,
-                            ProductCatalogRules.UsesStandardVariant(row.CategoryName, row.ProductName)
-                                ? "หน่วย"
-                                : "สี");
-                        categoryCache[row.CategoryName] = categoryId;
-                    }
+                    await _context.SaveChangesAsync();
 
-                    var (product, createdProduct) = await GetOrCreateProductAsync(
-                        categoryId,
-                        row.Sku,
-                        row.ProductName,
-                        row.Unit);
-                    importedProducts++;
-                    if (createdProduct)
-                    {
-                        createdProducts++;
-                    }
-
-                    totalPieces += row.Variants.Sum(v => v.QtyPieces);
-                    totalCases += row.Variants.Sum(v => v.QtyCases);
-
-                    foreach (var variant in row.Variants)
-                    {
-                        var (variantEntity, createdVariant) = await GetOrCreateVariantAsync(product, variant.Name);
-                        if (createdVariant)
-                        {
-                            createdVariants++;
-                        }
-
-                        excelExactTargets[variantEntity.VariantId] = new ExcelStockTarget(
-                            product.ProductId,
-                            variant.QtyPieces,
-                            variant.QtyCases);
-                    }
-                }
-
-                await _context.SaveChangesAsync();
-
-                // เคลียร์ประวัติทั้งหมด — รายงานรายเดือนโล่ง แล้วนับต่อจากยอดต้น
-                var clearedTransactions = await _context.StockTransactions.CountAsync();
-                await _context.StockTransactions.ExecuteDeleteAsync();
-                await _context.StockDocuments.ExecuteDeleteAsync();
-                await _context.Database.ExecuteSqlRawAsync("""
+                    // เคลียร์ประวัติทั้งหมด — รายงานรายเดือนโล่ง แล้วนับต่อจากยอดต้น
+                    var clearedTransactions = await _context.StockTransactions.CountAsync();
+                    await _context.StockTransactions.ExecuteDeleteAsync();
+                    await _context.StockDocuments.ExecuteDeleteAsync();
+                    await _context.Database.ExecuteSqlRawAsync("""
                     UPDATE dbo.StockBalances
                     SET QtyPieces = 0, QtyCases = 0, LastUpdated = SYSDATETIME()
                     """);
 
-                var openingDocument = new StockDocument
-                {
-                    TransactionTypeId = receiveTypeId,
-                    TxnDate = openingDate,
-                    RefNo = importRef,
-                    Note = $"ยอดต้นจาก Excel ({Truncate(safeFileName, 60)}) — ตั้งต้นระบบ ไม่นำเข้าบิล",
-                    CreatedBy = userId
-                };
-                _context.StockDocuments.Add(openingDocument);
-
-                // ยอดต้นเฉพาะที่มีของใน Excel; สี=0 ของสินค้าในไฟล์เคลียร์เป็น 0 แล้ว
-                foreach (var (variantId, target) in excelExactTargets)
-                {
-                    if (target.QtyPieces <= 0 && target.QtyCases <= 0)
+                    var openingDocument = new StockDocument
                     {
-                        continue;
-                    }
-
-                    _context.StockTransactions.Add(new StockTransaction
-                    {
-                        Document = openingDocument,
-                        VariantId = variantId,
                         TransactionTypeId = receiveTypeId,
                         TxnDate = openingDate,
-                        QtyPieces = Math.Max(0, target.QtyPieces),
-                        QtyCases = Math.Max(0, target.QtyCases),
                         RefNo = importRef,
-                        Note = $"ยอดต้นจาก Excel ({Truncate(safeFileName, 60)})",
+                        Note = $"ยอดต้นจาก Excel ({Truncate(safeFileName, 60)}) — ตั้งต้นระบบ ไม่นำเข้าบิล",
                         CreatedBy = userId
-                    });
-                    openingTransactions++;
+                    };
+                    _context.StockDocuments.Add(openingDocument);
+
+                    // ยอดต้นเฉพาะที่มีของใน Excel; สี=0 ของสินค้าในไฟล์เคลียร์เป็น 0 แล้ว
+                    foreach (var (variantId, target) in excelExactTargets)
+                    {
+                        if (target.QtyPieces <= 0 && target.QtyCases <= 0)
+                        {
+                            continue;
+                        }
+
+                        _context.StockTransactions.Add(new StockTransaction
+                        {
+                            Document = openingDocument,
+                            VariantId = variantId,
+                            TransactionTypeId = receiveTypeId,
+                            TxnDate = openingDate,
+                            QtyPieces = Math.Max(0, target.QtyPieces),
+                            QtyCases = Math.Max(0, target.QtyCases),
+                            RefNo = importRef,
+                            Note = $"ยอดต้นจาก Excel ({Truncate(safeFileName, 60)})",
+                            CreatedBy = userId
+                        });
+                        openingTransactions++;
+                    }
+
+                    // สีของสินค้าในไฟล์ที่ไม่มีใน Excel targets → ยอดเป็น 0 อยู่แล้วหลังรีเซ็ต
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    model.HasResult = true;
+                    model.IsSuccess = true;
+                    model.ResultMessage =
+                        "ตั้งต้นสำเร็จ — เคลียร์ประวัติแล้ว และตั้งยอดต้นจากสต็อกใน Excel (ไม่นำเข้าบิล)";
+                    model.ImportRef = importRef;
+                    model.ParsedRows = parsed.Rows.Count;
+                    model.ImportedProducts = importedProducts;
+                    model.CreatedProducts = createdProducts;
+                    model.CreatedVariants = createdVariants;
+                    model.ImportedTransactions = openingTransactions;
+                    model.ImportedIssueTransactions = 0;
+                    model.AdjustmentTransactions = openingTransactions;
+                    model.ClearedTransactions = clearedTransactions;
+                    model.OpeningTransactions = openingTransactions;
+                    model.TotalPieces = totalPieces;
+                    model.TotalCases = totalCases;
+                    model.SkippedNoStockProducts = skippedNoStock;
+                    model.ColorHeaders = parsed.ColorHeaders;
+                    model.BillDays = 0;
+                    model.SnapshotDate = openingDate;
+                    model.Warnings = parsed.Warnings
+                        .Append("นำเข้าเฉพาะยอดสต็อกเป็นยอดต้น — ไม่นำเข้าประวัติบิลจาก Excel")
+                        .Append($"เคลียร์รายการเก่า {clearedTransactions:N0} รายการ เพื่อให้รายงานโล่ง")
+                        .ToList();
+                    model.CategoryNames = parsed.Rows
+                        .Select(r => r.CategoryName)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(n => n)
+                        .ToList();
+                    return View(model);
                 }
-
-                // สีของสินค้าในไฟล์ที่ไม่มีใน Excel targets → ยอดเป็น 0 อยู่แล้วหลังรีเซ็ต
-                await _context.SaveChangesAsync();
-                await tx.CommitAsync();
-
-                model.HasResult = true;
-                model.IsSuccess = true;
-                model.ResultMessage =
-                    "ตั้งต้นสำเร็จ — เคลียร์ประวัติแล้ว และตั้งยอดต้นจากสต็อกใน Excel (ไม่นำเข้าบิล)";
-                model.ImportRef = importRef;
-                model.ParsedRows = parsed.Rows.Count;
-                model.ImportedProducts = importedProducts;
-                model.CreatedProducts = createdProducts;
-                model.CreatedVariants = createdVariants;
-                model.ImportedTransactions = openingTransactions;
-                model.ImportedIssueTransactions = 0;
-                model.AdjustmentTransactions = openingTransactions;
-                model.ClearedTransactions = clearedTransactions;
-                model.OpeningTransactions = openingTransactions;
-                model.TotalPieces = totalPieces;
-                model.TotalCases = totalCases;
-                model.SkippedNoStockProducts = skippedNoStock;
-                model.ColorHeaders = parsed.ColorHeaders;
-                model.BillDays = 0;
-                model.SnapshotDate = openingDate;
-                model.Warnings = parsed.Warnings
-                    .Append("นำเข้าเฉพาะยอดสต็อกเป็นยอดต้น — ไม่นำเข้าประวัติบิลจาก Excel")
-                    .Append($"เคลียร์รายการเก่า {clearedTransactions:N0} รายการ เพื่อให้รายงานโล่ง")
-                    .ToList();
-                model.CategoryNames = parsed.Rows
-                    .Select(r => r.CategoryName)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(n => n)
-                    .ToList();
-                return View(model);
-            }
-            catch
-            {
-                await tx.RollbackAsync();
-                throw;
-            }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
         }
         catch (InvalidOperationException ex)
         {

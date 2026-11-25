@@ -346,19 +346,27 @@ else
                     body: new FormData(form)
                 });
 
-                if (res.ok) {
-                    bootstrap.Modal.getInstance(document.getElementById('createProductModal')).hide();
-                    showToast('เพิ่มสินค้าใหม่สำเร็จ', 'success');
-                    setTimeout(() => location.reload(), 900);
+                const responseText = await res.text();
+                let data = null;
+                try { data = JSON.parse(responseText); } catch (_) {}
+
+                if (res.ok && data?.success === true) {
+                    bootstrap.Modal.getInstance(document.getElementById('createProductModal'))?.hide();
+                    await window.BapAlerts.success(data.message || 'เพิ่มสินค้าใหม่สำเร็จ');
+                    location.reload();
                     return;
                 }
 
-                document.getElementById('createProductModalBody').innerHTML = await res.text();
-                initProductModalForm();
+                const message = data
+                    ? window.BapAlerts.messageFromPayload(data, 'บันทึกข้อมูลไม่สำเร็จ')
+                    : window.BapAlerts.messageFromHtml(responseText, 'บันทึกข้อมูลไม่สำเร็จ');
+                await window.BapAlerts.error(message);
+                if (res.status === 400 && responseText) {
+                    document.getElementById('createProductModalBody').innerHTML = responseText;
+                    initProductModalForm();
+                }
             } catch {
-                document.getElementById('createProductModalBody').insertAdjacentHTML(
-                    'afterbegin',
-                    '<div class="alert alert-danger">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>');
+                await window.BapAlerts.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>บันทึก';
             }
@@ -634,12 +642,12 @@ else
             const qty = readQty(qtyValueInput);
 
             if (!variantId || !variant) {
-                if (showAlert) alert('กรุณาเลือกสินค้า/หน่วยก่อนเพิ่มรายการ');
+                if (showAlert) window.BapAlerts.error('กรุณาเลือกสินค้า/หน่วยก่อนเพิ่มรายการ');
                 return false;
             }
 
             if (qty === 0) {
-                if (showAlert) alert(isCaseVariant(variant)
+                if (showAlert) window.BapAlerts.error(isCaseVariant(variant)
                     ? 'กรุณาระบุจำนวนกระสอบ/ลัง/เส้นอย่างน้อย 1'
                     : 'กรุณาระบุจำนวนชิ้นอย่างน้อย 1');
                 return false;
@@ -653,7 +661,7 @@ else
             if (currentDirection() < 0) {
                 if (nextPieces > variant.qtyPieces || nextCases > variant.qtyCases) {
                     if (showAlert) {
-                        alert(isCaseVariant(variant)
+                        window.BapAlerts.error(isCaseVariant(variant)
                             ? `สต็อกไม่เพียงพอ (คงเหลือ ${variant.qtyCases.toLocaleString()} กระสอบ/ลัง/เส้น)`
                             : `สต็อกไม่เพียงพอ (คงเหลือ ${variant.qtyPieces.toLocaleString()} ชิ้น)`);
                     }
@@ -735,6 +743,7 @@ else
                     customerSelect?.focus();
                     alertDiv.textContent = 'กรุณาเลือกลูกค้า / ร้าน';
                     alertDiv.classList.remove('d-none');
+                    window.BapAlerts.error(alertDiv.textContent);
                     return;
                 }
                 customerSelect.classList.remove('is-invalid');
@@ -744,6 +753,7 @@ else
                     refNoText?.focus();
                     alertDiv.textContent = 'กรุณากรอกชื่อร้าน / เลขที่อ้างอิง';
                     alertDiv.classList.remove('d-none');
+                    window.BapAlerts.error(alertDiv.textContent);
                     return;
                 }
                 refNoText.classList.remove('is-invalid');
@@ -760,6 +770,7 @@ else
             if (txnLines.length === 0) {
                 alertDiv.textContent = 'กรุณาเพิ่มรายการอย่างน้อย 1 รายการ';
                 alertDiv.classList.remove('d-none');
+                window.BapAlerts.error(alertDiv.textContent);
                 return;
             }
 
@@ -774,26 +785,28 @@ else
                     body: new FormData(form)
                 });
 
-                if (res.ok) {
-                    const data = await res.json().catch(() => ({}));
+                const data = await res.json().catch(() => null);
+                if (res.ok && data?.success === true) {
                     bootstrap.Modal.getInstance(document.getElementById('createTxnModal')).hide();
-                    if (data.redirectUrl) {
-                        showToast('ตัดสต็อกสำเร็จ — ไปกรอกราคาในบิลขาย', 'success');
-                        setTimeout(() => { window.location.href = data.redirectUrl; }, 400);
-                    } else {
-                        showToast('บันทึกรายการสต็อกสำเร็จ', 'success');
-                        setTimeout(() => location.reload(), 900);
-                    }
+                    await window.BapAlerts.success(data.redirectUrl
+                        ? 'ตัดสต็อกสำเร็จ — ไปกรอกราคาในบิลขาย'
+                        : 'บันทึกรายการสต็อกสำเร็จ');
+                    if (data.redirectUrl) window.location.href = data.redirectUrl;
+                    else location.reload();
                 } else {
-                    const data = await res.json().catch(() => ({}));
-                    alertDiv.textContent = data.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+                    alertDiv.textContent = window.BapAlerts.messageFromPayload(
+                        data,
+                        'ไม่สามารถบันทึกรายการได้ กรุณาลองใหม่'
+                    );
                     alertDiv.classList.remove('d-none');
+                    await window.BapAlerts.error(alertDiv.textContent);
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>บันทึก';
                 }
             } catch {
                 alertDiv.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
                 alertDiv.classList.remove('d-none');
+                await window.BapAlerts.error(alertDiv.textContent);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>บันทึก';
             }
@@ -850,20 +863,6 @@ else
         syncShopFields();
     }
 
-    /* ── toast notification ───────────────────────────────────── */
-    function showToast(msg, type) {
-        const el = document.createElement('div');
-        el.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show shadow-sm`;
-        el.style.cssText = 'position:fixed;top:1.25rem;left:50%;transform:translateX(-50%);z-index:9999;min-width:260px;text-align:center';
-        if (window.BapStockHtml?.setToastMessage) {
-            window.BapStockHtml.setToastMessage(el, msg, type === 'success' ? 'bi bi-check-circle' : 'bi bi-x-circle');
-        } else {
-            el.textContent = msg;
-        }
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 4000);
-    }
-
     document.querySelectorAll('.open-product-modal').forEach(btn => {
         btn.addEventListener('click', async () => {
             const modalEl = document.getElementById('createProductModal');
@@ -885,9 +884,11 @@ else
                     initProductModalForm();
                 } else {
                     modalBody.innerHTML = '<div class="alert alert-danger m-2">โหลดฟอร์มไม่สำเร็จ กรุณาลองใหม่</div>';
+                    await window.BapAlerts.errorFromResponse(res, 'โหลดฟอร์มไม่สำเร็จ กรุณาลองใหม่');
                 }
             } catch {
                 modalBody.innerHTML = '<div class="alert alert-danger m-2">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>';
+                await window.BapAlerts.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่');
             }
         });
     });
@@ -924,9 +925,11 @@ else
                     initModalForm();
                 } else {
                     modalBody.innerHTML = '<div class="alert alert-danger m-2">โหลดฟอร์มไม่สำเร็จ กรุณาลองใหม่</div>';
+                    await window.BapAlerts.errorFromResponse(res, 'โหลดฟอร์มไม่สำเร็จ กรุณาลองใหม่');
                 }
             } catch {
                 modalBody.innerHTML = '<div class="alert alert-danger m-2">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>';
+                await window.BapAlerts.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่');
             }
         });
     });
@@ -1002,6 +1005,11 @@ else
 
         try {
             const res   = await fetch(`@Url.Action("AlertItems", "Stock")?alertType=${encodeURIComponent(alertType)}`);
+            if (!res.ok) {
+                await window.BapAlerts.errorFromResponse(res, 'โหลดข้อมูลสินค้าไม่สำเร็จ');
+                bodyEl.innerHTML = '<div class="alert alert-danger m-2">โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่</div>';
+                return;
+            }
             const items = await res.json();
 
             if (!items.length) {
@@ -1102,6 +1110,7 @@ else
         } catch {
             bodyEl.innerHTML =
                 '<div class="alert alert-danger m-2">โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่</div>';
+            await window.BapAlerts.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่');
         }
     }
 

@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <partial name="_SweetAlertStyles" />
 </head>
 <body class="login-body">
 
@@ -33,7 +34,7 @@
             <form asp-action="Login" method="post">
                 <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
 
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" role="alert"></div>
+                <partial name="_FlashMessages" />
 
                 <div class="mb-3">
                     <label asp-for="Email" class="form-label">Email</label>
@@ -76,6 +77,7 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <partial name="_SweetAlertScripts" />
     <script>
         document.getElementById('togglePassword')?.addEventListener('click', function () {
             const input = document.getElementById('passwordInput');

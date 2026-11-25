@@ -1,0 +1,71 @@
+<div class="modal fade" id="smartRestockAnalysisModal" tabindex="-1" aria-labelledby="smartRestockAnalysisModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content smart-restock-analysis-modal">
+            <div class="modal-header">
+                <div class="smart-restock-analysis-modal__heading">
+                    <span class="dashboard-ai-card__label dashboard-ai-card__label--restock">INBOUND / RESTOCK</span>
+                    <h2 class="modal-title fs-5" id="smartRestockAnalysisModalTitle">AI คาดการณ์สินค้าที่ต้องซื้อเพิ่มเข้าสต๊อก</h2>
+                    <p class="smart-restock-analysis-modal__description">จัดลำดับจากสต็อก ยอดขาย และแนวโน้มรับเข้าจริง</p>
+                    <p class="stock-prediction-modal__subtitle mb-0" id="smartRestockAnalysisModalSubtitle"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body smart-restock-analysis">
+                <section class="smart-restock-analysis__decision" role="status">
+                    <div class="smart-restock-analysis__decision-heading">
+                        <span class="smart-restock-analysis__icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                        <div>
+                            <span class="smart-restock-analysis__eyebrow">ข้อเสนอการดำเนินการ</span>
+                            <strong id="smartRestockAnalysisPriority"></strong>
+                        </div>
+                        <span class="smart-restock-analysis__priority-badge" id="smartRestockAnalysisPriorityBadge"></span>
+                    </div>
+                    <p id="smartRestockAnalysisReason"></p>
+                </section>
+
+                <section class="smart-restock-analysis__data">
+                    <div class="smart-restock-analysis__section-heading">
+                        <span class="smart-restock-analysis__section-icon"><i class="bi bi-clipboard-data" aria-hidden="true"></i></span>
+                        <div>
+                            <h3>ข้อมูลประกอบการวิเคราะห์</h3>
+                            <p>ตัวเลขจากสต็อกและรายการเคลื่อนไหวจริงในระบบ</p>
+                        </div>
+                    </div>
+                    <div class="stock-prediction-modal__metrics smart-restock-analysis__metrics">
+                        <div><span>คงเหลือ</span><strong id="smartRestockAnalysisStock">-</strong></div>
+                        <div><span>ยอดขายเฉลี่ย/วัน</span><strong id="smartRestockAnalysisAverage">-</strong></div>
+                        <div><span>คาดว่าจะหมด</span><strong id="smartRestockAnalysisDays">-</strong></div>
+                        <div><span>แนวโน้มยอดขาย</span><strong id="smartRestockAnalysisSalesTrend">-</strong></div>
+                        <div><span>ความเสี่ยงสต็อก</span><strong id="smartRestockAnalysisRisk">-</strong></div>
+                        <div><span>รับเข้า 30 วัน</span><strong id="smartRestockAnalysisInboundRecent">-</strong></div>
+                        <div><span>รับเข้า 30 วันก่อน</span><strong id="smartRestockAnalysisInboundPrevious">-</strong></div>
+                        <div><span>แนวโน้มรับเข้า</span><strong id="smartRestockAnalysisInboundTrend">-</strong></div>
+                        <div><span>จำนวนที่แนะนำซื้อ</span><strong>คำนวณไม่ได้</strong></div>
+                    </div>
+                </section>
+
+                <section class="smart-restock-analysis__chart-card">
+                    <div class="smart-restock-analysis__section-heading">
+                        <span class="smart-restock-analysis__section-icon"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></span>
+                        <div>
+                            <h3>ประวัติรายการรับเข้า 30 วัน</h3>
+                            <p>แสดงปริมาณรับเข้าใน Stock Ledger รายวัน</p>
+                        </div>
+                    </div>
+                    <div class="smart-restock-analysis__empty" id="smartRestockInboundEmpty" hidden>
+                        <i class="bi bi-inbox" aria-hidden="true"></i>
+                        <div>
+                            <strong>ไม่มีรายการรับเข้าในช่วง 30 วันที่ใช้แสดงกราฟ</strong>
+                            <span>ระบบจะแสดงแนวโน้มเมื่อมีรายการรับเข้าที่บันทึกไว้</span>
+                        </div>
+                    </div>
+                    <svg id="smartRestockInboundChart" class="stock-prediction-chart" viewBox="0 0 600 190" role="img" aria-label="กราฟรายการรับเข้าสินค้าย้อนหลัง 30 วัน"></svg>
+                </section>
+
+                <div class="smart-restock-analysis__note">
+                    แนวโน้มคำนวณจากรายการรับเข้าใน Stock Ledger ไม่ใช่กำหนดส่งสินค้าในอนาคต การแนะนำจำนวนซื้อและวันรับสินค้ายังต้องใช้ข้อมูลจัดซื้อเพิ่มเติม
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

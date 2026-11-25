@@ -11,7 +11,8 @@
 </div>
 
 <div class="form-card mb-4">
-    <form asp-action="Index" method="post" enctype="multipart/form-data" class="row g-3" id="deployImportForm">
+    <form asp-action="Index" method="post" enctype="multipart/form-data" class="row g-3" id="deployImportForm"
+          data-bap-confirm="ยืนยันตั้งต้นจาก Excel? ระบบจะลบประวัติเข้า–ออกทั้งหมด แล้วตั้งยอดต้นใหม่จากไฟล์">
         @Html.AntiForgeryToken()
         <div class="col-12">
             <label asp-for="ExcelFile" class="form-label">ไฟล์ Excel (.xlsx)</label>
@@ -63,6 +64,8 @@
 
 @if (Model.HasResult)
 {
+    <div hidden data-bap-notification data-type="@(Model.IsSuccess ? "success" : "error")"
+         data-message="@Model.ResultMessage"></div>
     <div class="alert @(Model.IsSuccess ? "alert-success" : "alert-danger") mb-4">
         @Model.ResultMessage
         @if (!string.IsNullOrWhiteSpace(Model.ImportRef))
@@ -183,9 +186,6 @@
                 e.preventDefault();
                 confirm.focus();
                 return;
-            }
-            if (!window.confirm('ยืนยันตั้งต้นจาก Excel?\nระบบจะลบประวัติเข้า–ออกทั้งหมด แล้วตั้งยอดต้นใหม่จากไฟล์')) {
-                e.preventDefault();
             }
         });
     </script>

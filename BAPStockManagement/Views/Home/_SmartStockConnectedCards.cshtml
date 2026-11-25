@@ -1,0 +1,143 @@
+@model BAPStockManagement.ViewModels.Home.SmartStockDemoDashboardViewModel
+
+@{
+    var highCount = Model.StockRisks.Count(item => item.RiskLevel == "High");
+    var mediumCount = Model.StockRisks.Count(item => item.RiskLevel == "Medium");
+    var lowCount = Model.StockRisks.Count(item => item.RiskLevel == "Low");
+}
+
+<div id="smart-stock-risk-card" class="chart-card dashboard-insight-card dashboard-card">
+    <div class="chart-card__header">
+        <div class="dashboard-ai-card__heading">
+            <span class="dashboard-ai-card__icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+            <div>
+                <span class="dashboard-ai-card__label">DEMO ML · ความเสี่ยงขาดสต็อก</span>
+                <h2>AI วิเคราะห์ความเสี่ยงสินค้าขาดสต็อก</h2>
+                <p>วิเคราะห์จากสต็อกและ forecast demand ตัวอย่าง</p>
+            </div>
+        </div>
+        <span class="smart-stock-demo-badge">ข้อมูลตัวอย่าง</span>
+    </div>
+    <div class="dashboard-card__content smart-stock-connected-content">
+        <div class="smart-stock-risk-overview">
+            <div><span>สินค้าทั้งหมด</span><strong>@Model.StockRisks.Count</strong></div>
+            <div class="smart-stock-risk-overview--high"><span>สูง</span><strong>@highCount</strong></div>
+            <div class="smart-stock-risk-overview--medium"><span>ปานกลาง</span><strong>@mediumCount</strong></div>
+            <div class="smart-stock-risk-overview--low"><span>ต่ำ</span><strong>@lowCount</strong></div>
+        </div>
+        <div class="smart-stock-connected-list">
+            @foreach (var item in Model.StockRisks.Take(3))
+            {
+                var riskClass = item.RiskLevel switch
+                {
+                    "High" => "smart-stock-risk-high",
+                    "Medium" => "smart-stock-risk-medium",
+                    _ => "smart-stock-risk-low"
+                };
+                var riskLabel = item.RiskLevel switch
+                {
+                    "High" => "สูง",
+                    "Medium" => "ปานกลาง",
+                    _ => "ต่ำ"
+                };
+                <button type="button"
+                        class="smart-stock-connected-product"
+                        data-smart-stock-product="@item.ProductId"
+                        data-product-name="@item.ProductName"
+                        data-current-stock="@item.CurrentStock"
+                        data-forecast-demand="@item.ForecastDemand"
+                        data-safety-stock="@item.SafetyStock"
+                        data-remaining="@item.EstimatedRemainingStock"
+                        data-risk="@item.RiskLevel"
+                        data-risk-score="@item.RiskScore"
+                        data-risk-reason="@item.RiskReason"
+                        data-bs-toggle="modal"
+                        data-bs-target="#smartStockCombinedDetailModal">
+                    <div>
+                        <strong>@item.ProductName</strong>
+                        <small>#@item.ProductId · @item.Segment</small>
+                    </div>
+                    <span class="smart-stock-risk @riskClass">@riskLabel</span>
+                    <div class="smart-stock-connected-facts">
+                        <span>คงเหลือ <strong>@item.CurrentStock</strong></span>
+                        <span>Forecast <strong>@item.ForecastDemand</strong></span>
+                        <span>เหลือประมาณ <strong>@item.EstimatedRemainingStock</strong></span>
+                    </div>
+                </button>
+            }
+        </div>
+    </div>
+    <div class="dashboard-card__footer">
+        <button type="button"
+                class="btn btn-sm btn-outline-primary"
+                data-smart-stock-open-ai>
+            <i class="bi bi-list-ul"></i> ดูรายการทั้งหมด
+        </button>
+    </div>
+</div>
+
+<div id="smart-stock-purchase-card" class="chart-card dashboard-insight-card dashboard-card">
+    <div class="chart-card__header">
+        <div class="dashboard-ai-card__heading">
+            <span class="dashboard-ai-card__icon"><i class="bi bi-cart-plus" aria-hidden="true"></i></span>
+            <div>
+                <span class="dashboard-ai-card__label">DEMO ML · คำแนะนำซื้อ</span>
+                <h2>AI คำแนะนำการสั่งซื้อ</h2>
+                <p>คำแนะนำซื้อจากสต็อก Forecast และ Safety Stock</p>
+            </div>
+        </div>
+
+        <span class="smart-stock-demo-badge">จำลอง</span>
+    </div>
+    <div class="dashboard-card__content smart-stock-connected-content">
+        <div class="smart-stock-purchase-list">
+            @foreach (var item in Model.PurchaseRecommendations.Where(item => item.SuggestedQuantity > 0).Take(3))
+            {
+                var risk = Model.StockRisks.FirstOrDefault(product => product.ProductId == item.ProductId);
+                var priorityLabel = item.Priority switch
+                {
+                    "Urgent" => "เร่งด่วน",
+                    "High" => "สูง",
+                    "Medium" => "ปานกลาง",
+                    _ => "ต่ำ"
+                };
+                <button type="button"
+                        class="smart-stock-purchase-product"
+                        data-smart-stock-product="@item.ProductId"
+                        data-purchase-name="@item.ProductName"
+                        data-purchase-current="@item.CurrentStock"
+                        data-purchase-demand="@item.ForecastDemand"
+                        data-purchase-safety="@item.SafetyStock"
+                        data-purchase-quantity="@item.SuggestedQuantity"
+                        data-purchase-priority="@item.Priority"
+                        data-purchase-reason="@item.RecommendationReason"
+                        data-product-name="@item.ProductName"
+                        data-current-stock="@item.CurrentStock"
+                        data-forecast-demand="@item.ForecastDemand"
+                        data-safety-stock="@item.SafetyStock"
+                        data-remaining="@item.EstimatedRemainingStock"
+                        data-risk-level="@(risk?.RiskLevel ?? "Low")"
+                        data-risk-score="@(risk?.RiskScore ?? 0)"
+                        data-risk-reason="@(risk?.RiskReason ?? item.RecommendationReason)"
+                        data-bs-toggle="modal"
+                        data-bs-target="#smartStockCombinedDetailModal">
+                    <div>
+                        <strong>@item.ProductName</strong>
+                        <small>ลำดับความสำคัญ: @priorityLabel</small>
+                    </div>
+                    <div class="smart-stock-order-quantity">
+                        <span>แนะนำสั่งซื้อ</span>
+                        <strong>@item.SuggestedQuantity</strong>
+                        <small>หน่วย</small>
+                    </div>
+                    <p>@item.RecommendationReason</p>
+                </button>
+            }
+        </div>
+    </div>
+    <div class="dashboard-card__footer">
+        <span class="smart-stock-demo-footer-note">
+            แนะนำเท่านั้น ไม่มีการสร้างใบสั่งซื้ออัตโนมัติ
+        </span>
+    </div>
+</div>

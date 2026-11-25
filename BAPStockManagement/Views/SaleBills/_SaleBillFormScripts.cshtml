@@ -39,7 +39,7 @@
         }
 
         if (!billDateInput.value || !/^\d{4}-\d{2}-\d{2}$/.test(billDateInput.value)) {
-            alert('กรุณาเลือกวันที่บิล');
+            window.BapAlerts.error('กรุณาเลือกวันที่บิล');
             billDateInput.focus();
             return false;
         }
@@ -81,18 +81,24 @@
             preview.classList.add('d-none');
             return;
         }
-        const res = await fetch(`/Customers/Lookup/${id}`);
-        if (!res.ok) {
+        try {
+            const res = await fetch(`/Customers/Lookup/${id}`);
+            if (!res.ok) {
+                preview.classList.add('d-none');
+                await window.BapAlerts.errorFromResponse(res, 'โหลดข้อมูลลูกค้าไม่สำเร็จ');
+                return;
+            }
+            const c = await res.json();
+            document.getElementById('previewName').textContent = c.name || '';
+            const addr = [c.address, c.district, c.province].filter(Boolean).join(' ');
+            document.getElementById('previewAddress').textContent = addr;
+            document.getElementById('previewPhone').textContent = c.phone1 ? `Tel. ${c.phone1}` : '';
+            document.getElementById('previewShipping').textContent = c.shippingInfo || '';
+            preview.classList.remove('d-none');
+        } catch {
             preview.classList.add('d-none');
-            return;
+            await window.BapAlerts.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่');
         }
-        const c = await res.json();
-        document.getElementById('previewName').textContent = c.name || '';
-        const addr = [c.address, c.district, c.province].filter(Boolean).join(' ');
-        document.getElementById('previewAddress').textContent = addr;
-        document.getElementById('previewPhone').textContent = c.phone1 ? `Tel. ${c.phone1}` : '';
-        document.getElementById('previewShipping').textContent = c.shippingInfo || '';
-        preview.classList.remove('d-none');
     }
 
     customerSelect?.addEventListener('change', () => loadCustomer(customerSelect.value));

@@ -138,7 +138,7 @@
             </form>
 
             <form asp-action="Delete" asp-route-id="@Model.DocumentId" method="post" class="mt-4 pt-3 border-top"
-                  onsubmit="return confirm('ยืนยันลบบิลนี้ทั้งหมด? ระบบจะคืนยอดสต็อกของบิลนี้');">
+                  data-bap-confirm="ยืนยันลบบิลนี้ทั้งหมด? ระบบจะคืนยอดสต็อกของบิลนี้">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="btn btn-outline-danger">
                     <i class="bi bi-trash me-1"></i>ลบบิลทั้งใบ
@@ -431,12 +431,12 @@
             const qty = readQty(qtyValueInput);
 
             if (!variantId || !variant) {
-                if (showAlert) alert('กรุณาเลือกสินค้า/หน่วยก่อนเพิ่มรายการ');
+                if (showAlert) window.BapAlerts.error('กรุณาเลือกสินค้า/หน่วยก่อนเพิ่มรายการ');
                 return false;
             }
 
             if (qty === 0) {
-                if (showAlert) alert(isCaseVariant(variant)
+                if (showAlert) window.BapAlerts.error(isCaseVariant(variant)
                     ? 'กรุณาระบุจำนวนกระสอบ/ลัง/เส้นอย่างน้อย 1'
                     : 'กรุณาระบุจำนวนชิ้นอย่างน้อย 1');
                 return false;
@@ -504,7 +504,7 @@
             }
 
             if (txnLines.length === 0) {
-                alert('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ');
+                window.BapAlerts.error('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ');
                 return;
             }
 

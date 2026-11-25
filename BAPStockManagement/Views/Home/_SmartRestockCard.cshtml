@@ -1,0 +1,95 @@
+@model BAPStockManagement.ViewModels.Home.HomeDashboardViewModel
+
+@{
+    var urgentCount = Model.SmartRestockItems.Count(item =>
+        item.Priority == BAPStockManagement.ViewModels.Home.SmartRestockPriority.Urgent);
+}
+
+<div id="dashboard-smart-restock" class="chart-card dashboard-insight-card dashboard-card">
+    <div class="chart-card__header">
+        <div class="dashboard-ai-card__heading">
+            <span class="dashboard-ai-card__icon dashboard-ai-card__icon--restock">
+                <i class="bi bi-box-seam" aria-hidden="true"></i>
+            </span>
+            <div>
+                <span class="dashboard-ai-card__label">INBOUND / RESTOCK</span>
+                <h2>AI คาดการณ์สินค้าที่ต้องซื้อเพิ่มเข้าสต๊อก</h2>
+                <p>จัดลำดับจากสต็อก ยอดขาย และแนวโน้มรับเข้าจริง</p>
+            </div>
+        </div>
+        <span class="dashboard-restock-count">@Model.SmartRestockItems.Count.ToString("N0") ต้องตรวจสอบ</span>
+    </div>
+    <div class="dashboard-card__content dashboard-restock-content">
+        <div class="dashboard-restock-summary">
+            <div>
+                <span>รายการต้องตรวจสอบ</span>
+                <strong>@Model.SmartRestockItems.Count.ToString("N0")</strong>
+            </div>
+            <div>
+                <span>เร่งตรวจสอบ</span>
+                <strong>@urgentCount.ToString("N0")</strong>
+            </div>
+        </div>
+
+        <div class="dashboard-restock-notice" role="status">
+            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            <span>ระบบเปรียบเทียบแนวโน้มรับเข้า 30 วันล่าสุดกับ 30 วันก่อน แต่ยังคำนวณจำนวนซื้อไม่ได้ เพราะไม่มีข้อมูล Lead Time, Safety Stock, Target Coverage และยอดจองหรือสินค้าระหว่างทาง</span>
+        </div>
+
+        @if (Model.SmartRestockItems.Count == 0)
+        {
+            <div class="chart-empty dashboard-restock-empty">ยังไม่มีสัญญาณที่ต้องเร่งเติมหรือเตรียมเติมในขณะนี้</div>
+        }
+        else
+        {
+            <div class="dashboard-restock-list" tabindex="0" aria-label="รายการสินค้าที่ AI แนะนำให้ตรวจสอบ">
+                @foreach (var smartItem in Model.SmartRestockItems.Take(3))
+                {
+                    var item = smartItem.Prediction;
+                    var priorityClass = smartItem.Priority switch
+                    {
+                        BAPStockManagement.ViewModels.Home.SmartRestockPriority.Urgent => "smart-restock-priority--urgent",
+                        BAPStockManagement.ViewModels.Home.SmartRestockPriority.Prepare => "smart-restock-priority--prepare",
+                        _ => "smart-restock-priority--monitor"
+                    };
+
+                    <article class="dashboard-restock-product">
+                        <div class="dashboard-restock-product__header">
+                            <div>
+                                <strong>@item.Sku</strong>
+                                <span>@item.ProductName</span>
+                            </div>
+                            <span class="smart-restock-priority @priorityClass">@smartItem.PriorityLabel</span>
+                        </div>
+                        <div class="dashboard-restock-product__facts">
+                            <span>คงเหลือ <strong>@item.CurrentStock.ToString("N0") @item.Unit</strong></span>
+                            <span>
+                                ยอดขายเฉลี่ย
+                                <strong>@(item.AverageDailySales.HasValue ? $"{item.AverageDailySales.Value.ToString("0.##")} {item.Unit}/วัน" : "ข้อมูลไม่พอ")</strong>
+                            </span>
+                            <span>รับเข้า 30 วัน <strong>@smartItem.InboundTrend.Recent30DayQuantity.ToString("N0") @item.Unit</strong></span>
+                            <span>แนวโน้มรับเข้า <strong>@smartItem.InboundTrendLabel</strong></span>
+                            <span>แนะนำซื้อ <strong>คำนวณไม่ได้</strong></span>
+                        </div>
+                        <p class="dashboard-restock-product__reason">@smartItem.DecisionReason</p>
+                        @await Html.PartialAsync("_SmartRestockAnalysisButton", smartItem)
+                    </article>
+                }
+            </div>
+        }
+    </div>
+    <div class="dashboard-card__footer dashboard-restock-footer">
+        <button type="button"
+                class="btn btn-sm btn-outline-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#smartRestockItemsModal">
+            <i class="bi bi-list-ul" aria-hidden="true"></i> ดูสินค้าทั้งหมด (@Model.SmartRestockItems.Count.ToString("N0") รายการ)
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary"
+                data-bs-toggle="modal"
+                data-bs-target="#smartRestockInfoModal">
+            <i class="bi bi-cart-plus" aria-hidden="true"></i> สร้างรายการสั่งซื้อ
+        </button>
+    </div>
+</div>

@@ -21,7 +21,7 @@
                 <i class="bi bi-pencil me-1"></i>แก้ไข
             </button>
             <form asp-action="Delete" asp-route-id="@Model.DocumentId" method="post" class="d-inline"
-                  onsubmit="return confirm('ยืนยันลบบิลนี้ทั้งหมด? ระบบจะคืนยอดสต็อกของบิลนี้');">
+                  data-bap-confirm="ยืนยันลบบิลนี้ทั้งหมด? ระบบจะคืนยอดสต็อกของบิลนี้">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="btn btn-outline-danger">
                     <i class="bi bi-trash me-1"></i>ลบ
@@ -124,15 +124,6 @@
     const resolveColor = window.BapStockColors?.resolve || function (name) {
         return { bg: '#f4f4f5', text: '#52525b', dot: '#94a3b8' };
     };
-
-    function showToast(msg, type) {
-        const el = document.createElement('div');
-        el.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show shadow-sm`;
-        el.style.cssText = 'position:fixed;top:1.25rem;left:50%;transform:translateX(-50%);z-index:9999;min-width:260px;text-align:center';
-        el.textContent = msg;
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 4000);
-    }
 
     function initEditTxnModal(root) {
         const form = root.querySelector('#editTxnForm');
@@ -307,6 +298,7 @@
         function showAlert(msg) {
             alertDiv.textContent = msg;
             alertDiv.classList.remove('d-none');
+            window.BapAlerts.error(msg);
         }
 
         function renderTxnLines() {
@@ -469,14 +461,17 @@
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     body: new FormData(form)
                 });
-                if (res.ok) {
+                const data = await res.json().catch(() => null);
+                if (res.ok && data?.success === true) {
                     bootstrap.Modal.getInstance(document.getElementById('editTxnModal'))?.hide();
-                    showToast('แก้ไขบิลสำเร็จ และปรับยอดสต็อกแล้ว', 'success');
-                    setTimeout(() => location.reload(), 700);
+                    await window.BapAlerts.success('แก้ไขบิลสำเร็จ และปรับยอดสต็อกแล้ว');
+                    location.reload();
                     return;
                 }
-                const data = await res.json().catch(() => ({}));
-                showAlert(data.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+                showAlert(window.BapAlerts.messageFromPayload(
+                    data,
+                    'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่'
+                ));
             } catch {
                 showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
             }
@@ -484,8 +479,9 @@
             submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>บันทึก';
         });
 
-        root.querySelector('#editModalDeleteBtn')?.addEventListener('click', () => {
-            if (!confirm('ยืนยันลบบิลนี้ทั้งหมด? ระบบจะคืนยอดสต็อกของบิลนี้')) return;
+        root.querySelector('#editModalDeleteBtn')?.addEventListener('click', async () => {
+            const result = await window.BapAlerts.confirm('ยืนยันลบบิลนี้ทั้งหมด? ระบบจะคืนยอดสต็อกของบิลนี้');
+            if (!result.isConfirmed) return;
             const btn = root.querySelector('#editModalDeleteBtn');
             const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value;
             const deleteForm = document.createElement('form');
@@ -524,9 +520,11 @@
                     initEditTxnModal(modalBody);
                 } else {
                     modalBody.innerHTML = '<div class="alert alert-danger m-2">โหลดฟอร์มไม่สำเร็จ</div>';
+                    await window.BapAlerts.errorFromResponse(res, 'โหลดฟอร์มไม่สำเร็จ กรุณาลองใหม่');
                 }
             } catch {
                 modalBody.innerHTML = '<div class="alert alert-danger m-2">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>';
+                await window.BapAlerts.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่');
             }
         });
     });

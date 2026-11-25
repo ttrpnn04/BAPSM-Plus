@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/BAPStockManagement.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
+    <partial name="_SweetAlertStyles" />
 </head>
 <body>
     @{
@@ -36,7 +37,8 @@
                     <div class="header-avatar">@initial</div>
                     <span class="header-username d-none d-sm-inline">@email</span>
                 </div>
-                <form asp-controller="Account" asp-action="Logout" method="post" class="d-flex">
+                <form asp-controller="Account" asp-action="Logout" method="post" class="d-flex"
+                      data-bap-confirm="ยืนยันออกจากระบบหรือไม่?">
                     @Html.AntiForgeryToken()
                     <button type="submit" class="header-logout">
                         <i class="bi bi-box-arrow-right"></i>
@@ -120,6 +122,7 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/th.js"></script>
+    <partial name="_SweetAlertScripts" />
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
