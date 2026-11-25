@@ -7,9 +7,14 @@
 
 <div id="dashboard-smart-restock" class="chart-card dashboard-insight-card dashboard-card">
     <div class="chart-card__header">
-        <div>
-            <h2>AI คาดการณ์สินค้าที่ต้องซื้อเพิ่มเข้าสต๊อก</h2>
-            <p>ใช้ยอดจ่ายออกและสต็อกจริงที่มี เพื่อชี้รายการที่ควรตรวจสอบ</p>
+        <div class="dashboard-ai-card__heading">
+            <span class="dashboard-ai-card__icon dashboard-ai-card__icon--restock">
+                <i class="bi bi-box-seam" aria-hidden="true"></i>
+            </span>
+            <div>
+                <h2>AI คาดการณ์สินค้าที่ต้องซื้อเพิ่มเข้าสต๊อก</h2>
+                <p>ใช้ยอดจ่ายออกและสต็อกจริงที่มี เพื่อชี้รายการที่ควรตรวจสอบ</p>
+            </div>
         </div>
         <span class="dashboard-restock-count">@Model.StockActionItems.Count.ToString("N0") ต้องตรวจสอบ</span>
     </div>
@@ -26,24 +31,24 @@
         </div>
 
         <div class="dashboard-restock-notice" role="status">
-            <i class="bi bi-info-circle" aria-hidden="true"></i>
-            <span>ยังคำนวณจำนวนซื้อไม่ได้: ระบบไม่มี Lead Time, Safety Stock, Target Coverage และยอดรับเข้าหรือจองสินค้า</span>
+            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            <span>ข้อมูลไม่เพียงพอสำหรับการคำนวณจำนวนที่แนะนำซื้อ: ไม่มี Lead Time, Safety Stock, Target Coverage และยอดรับเข้าหรือจองสินค้า</span>
         </div>
 
         @if (Model.StockActionItems.Count == 0)
         {
-            <div class="chart-empty">ยังไม่มีสินค้าเข้าเกณฑ์เสี่ยงหรือใกล้หมดในขณะนี้</div>
+            <div class="chart-empty dashboard-restock-empty">ยังไม่มีสินค้าเข้าเกณฑ์เสี่ยงหรือใกล้หมดในขณะนี้</div>
         }
         else
         {
-            <div class="dashboard-restock-list">
+            <div class="dashboard-restock-list" tabindex="0" aria-label="รายการสินค้าที่ควรตรวจสอบ">
                 @foreach (var item in Model.StockActionItems.Take(3))
                 {
                     var riskLabel = item.RiskLevel switch
                     {
                         BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical => "เสี่ยงสูง",
-                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "เสี่ยง",
-                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "ปกติ",
+                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "เสี่ยงสูง",
+                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "เฝ้าระวัง",
                         _ => "ข้อมูลไม่พอ"
                     };
                     var riskClass = item.RiskLevel switch

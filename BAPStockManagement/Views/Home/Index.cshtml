@@ -267,28 +267,44 @@
                 @await Html.PartialAsync("_SmartRestockCard", Model)
                 <div id="dashboard-ai-alerts" class="chart-card dashboard-insight-card dashboard-card">
                     <div class="chart-card__header">
-                        <div>
-                            <h2>AI คาดการณ์สินค้าเสี่ยงขาดสต็อก</h2>
-                            <p>ใช้ยอดขายจากบิลที่เชื่อมกับสต็อกย้อนหลังสูงสุด 90 วัน</p>
+                        <div class="dashboard-ai-card__heading">
+                            <span class="dashboard-ai-card__icon dashboard-ai-card__icon--risk">
+                                <i class="bi bi-robot" aria-hidden="true"></i>
+                            </span>
+                            <div>
+                                <h2>AI คาดการณ์สินค้าเสี่ยงขาดสต็อก</h2>
+                                <p>ใช้ยอดขายจากบิลที่เชื่อมกับสต็อกย้อนหลังสูงสุด 90 วัน</p>
+                            </div>
                         </div>
                         <span class="dashboard-urgent-count">@Model.StockActionItems.Count.ToString("N0") รายการ</span>
                     </div>
-                    <div class="dashboard-card__content">
+                    <div class="dashboard-card__content dashboard-risk-content">
+                        <div class="dashboard-stock-summary">
+                            <div>
+                                <span>สินค้าเสี่ยงสูง (≤3 วัน)</span>
+                                <strong>@Model.StockActionItems.Count(item => item.RiskLevel == BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical).ToString("N0")</strong>
+                            </div>
+                            <div>
+                                <span>รายการต้องติดตาม</span>
+                                <strong>@Model.StockActionItems.Count.ToString("N0")</strong>
+                            </div>
+                        </div>
                         @if (Model.StockActionItems.Count == 0)
                         {
-                            <div class="chart-empty">ยังไม่มีสินค้าเข้าเกณฑ์เสี่ยงหรือใกล้หมดในขณะนี้</div>
+                            <div class="chart-empty dashboard-risk-empty">ยังไม่มีสินค้าเข้าเกณฑ์เสี่ยงหรือใกล้หมดในขณะนี้</div>
                         }
                         else
                         {
-                            <div class="dashboard-urgent-list">
-                                @for (var index = 0; index < Model.StockActionItems.Count; index++)
-                                {
+                            <div class="dashboard-risk-list" tabindex="0" aria-label="รายการสินค้าเสี่ยงขาดสต็อก">
+                                <div class="dashboard-urgent-list">
+                                    @for (var index = 0; index < Model.StockActionItems.Count; index++)
+                                    {
                                     var item = Model.StockActionItems[index];
                                     var riskLabel = item.RiskLevel switch
                                     {
                                         BAPStockManagement.ViewModels.Home.StockRiskLevel.Critical => "วิกฤต",
-                                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "เสี่ยง",
-                                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "ปกติ",
+                                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Warning => "เสี่ยงสูง",
+                                        BAPStockManagement.ViewModels.Home.StockRiskLevel.Normal => "เฝ้าระวัง",
                                         _ => "ข้อมูลไม่พอ"
                                     };
                                     var riskClass = item.RiskLevel switch
@@ -306,9 +322,9 @@
                                         _ => "ข้อมูลไม่พอ"
                                     };
 
-                                    <div class="dashboard-urgent-product dashboard-ai-product"
-                                         data-stock-page-item
-                                         hidden="@(index >= 3 ? "hidden" : null)">
+                                        <div class="dashboard-urgent-product dashboard-ai-product"
+                                             data-stock-page-item
+                                             hidden="@(index >= 3 ? "hidden" : null)">
                                         <span class="dashboard-urgent-product__icon"><i class="bi bi-box-seam"></i></span>
                                         <div class="dashboard-urgent-product__name">
                                             <strong>@item.Sku</strong>
@@ -387,11 +403,12 @@
                                                 <i class="bi bi-graph-up" aria-hidden="true"></i> ดูกราฟแนวโน้ม
                                             </button>
                                         </div>
-                                    </div>
-                                }
+                                        </div>
+                                    }
+                                </div>
                             </div>
-                            <p class="dashboard-ai-disclaimer">การคาดการณ์เป็นสถิติจากรายการจ่ายออกในระบบ ไม่ใช่โมเดล Machine Learning และไม่รวมหน่วยที่แปลงกันไม่ได้</p>
                         }
+                        <p class="dashboard-ai-disclaimer">การคาดการณ์เป็นสถิติจากรายการจ่ายออกในระบบ ไม่ใช่โมเดล Machine Learning และไม่รวมหน่วยที่แปลงกันไม่ได้</p>
                     </div>
                     <div class="dashboard-card__footer dashboard-ai-card__footer">
                         @if (Model.StockActionItems.Count > 3)
@@ -899,6 +916,7 @@
             var stockPageLabel = document.querySelector('[data-stock-page-label]');
             var stockPagePrevious = document.querySelector('[data-stock-page-prev]');
             var stockPageNext = document.querySelector('[data-stock-page-next]');
+            var stockPageScroller = document.querySelector('.dashboard-risk-list');
             var stockPageSize = 3;
             var stockPageCount = Math.ceil(stockPageItems.length / stockPageSize);
             var currentStockPage = 0;
@@ -911,6 +929,7 @@
                     stockPageItems.forEach(function (item, index) {
                         item.hidden = index < start || index >= end;
                     });
+                    if (stockPageScroller) stockPageScroller.scrollTop = 0;
                     stockPageLabel.textContent =
                         (start + 1).toLocaleString('th-TH') + '–' + end.toLocaleString('th-TH') +
                         ' / ' + stockPageItems.length.toLocaleString('th-TH');

@@ -1279,13 +1279,48 @@ code {
 }
 
 #dashboard-smart-restock {
-  border-color: color-mix(in srgb, var(--success) 24%, var(--border));
-  background: var(--success-soft);
+  border-color: var(--border-light);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.05);
 }
 
 #dashboard-ai-alerts {
-  border-color: color-mix(in srgb, var(--danger) 24%, var(--border));
-  background: var(--danger-soft);
+  border-color: var(--border-light);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.05);
+}
+
+.dashboard-ai-card__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.dashboard-ai-card__heading > div {
+  min-width: 0;
+}
+
+.dashboard-ai-card__icon {
+  display: grid;
+  flex: 0 0 2.4rem;
+  width: 2.4rem;
+  height: 2.4rem;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 1.05rem;
+}
+
+.dashboard-ai-card__icon--restock {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+  color: var(--success);
+}
+
+.dashboard-ai-card__icon--risk {
+  background: color-mix(in srgb, var(--danger) 9%, var(--surface));
+  color: var(--danger);
 }
 
 .dashboard-restock-count {
@@ -1305,6 +1340,72 @@ code {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.dashboard-risk-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  overflow: hidden;
+}
+
+.dashboard-stock-summary {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.dashboard-stock-summary > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
+}
+
+.dashboard-stock-summary span {
+  color: var(--text-3);
+  font-size: 0.65rem;
+}
+
+.dashboard-stock-summary strong {
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+.dashboard-risk-list,
+.dashboard-restock-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-width: thin;
+}
+
+.dashboard-risk-list::-webkit-scrollbar,
+.dashboard-restock-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.dashboard-risk-list::-webkit-scrollbar-thumb,
+.dashboard-restock-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.dashboard-risk-list::-webkit-scrollbar-track,
+.dashboard-restock-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-risk-empty {
+  flex: 1 1 auto;
 }
 
 .dashboard-card__footer {
@@ -1353,10 +1454,12 @@ code {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  overflow: hidden;
 }
 
 .dashboard-restock-summary {
   display: grid;
+  flex: 0 0 auto;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
 }
@@ -1367,8 +1470,8 @@ code {
   min-width: 0;
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
 }
 
 .dashboard-restock-summary span {
@@ -1383,13 +1486,14 @@ code {
 
 .dashboard-restock-notice {
   display: flex;
+  flex: 0 0 auto;
   align-items: flex-start;
   gap: 0.45rem;
   min-width: 0;
   padding: 0.5rem 0.6rem;
   border-radius: var(--radius-sm);
   background: var(--warning-soft);
-  color: var(--warning);
+  color: var(--warning-text);
   font-size: 0.68rem;
   line-height: 1.45;
 }
@@ -1397,6 +1501,7 @@ code {
 .dashboard-restock-notice i {
   flex: 0 0 auto;
   margin-top: 0.05rem;
+  color: var(--warning);
 }
 
 .dashboard-restock-list {
@@ -1412,8 +1517,8 @@ code {
   min-width: 0;
   padding: 0.55rem;
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--primary-soft) 28%, var(--surface));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
 }
 
 .dashboard-restock-product__header {
@@ -1618,8 +1723,8 @@ code {
   min-width: 0;
   padding: 0.55rem;
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--danger-soft) 28%, var(--surface));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
 }
 
 .dashboard-urgent-product__icon {
@@ -1767,7 +1872,7 @@ code {
 
 .dashboard-urgent-product__badge--warning {
   background: color-mix(in srgb, var(--warning) 16%, var(--surface));
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .dashboard-urgent-product__badge--normal {
@@ -1781,7 +1886,8 @@ code {
 }
 
 .dashboard-ai-disclaimer {
-  margin: 0.8rem 0 0;
+  flex: 0 0 auto;
+  margin: 0;
   color: var(--text-3);
   font-size: 0.65rem;
 }
