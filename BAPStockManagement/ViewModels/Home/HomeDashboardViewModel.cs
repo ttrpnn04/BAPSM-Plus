@@ -101,6 +101,12 @@ public sealed class SmartStockDemoPurchaseItem
 
     public int SuggestedQuantity { get; set; }
 
+    public int OpeningStockShortfall { get; set; }
+
+    public int UncoveredForecastDemand { get; set; }
+
+    public int SafetyStockTopUp { get; set; }
+
     public string Priority { get; set; } = string.Empty;
 
     public string RecommendationReason { get; set; } = string.Empty;

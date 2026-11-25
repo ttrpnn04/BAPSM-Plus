@@ -4611,6 +4611,18 @@ body.login-body {
 
 .smart-stock-live__grid { stroke: #e2e8f0; }
 .smart-stock-live svg text { fill: #475569; font-size: 11px; }
+.smart-stock-live__forecast-week { fill: #fff5eb; }
+.smart-stock-live__forecast-bridge { stroke: #c64f12; stroke-width: 2.5; stroke-dasharray: 6 4; }
+.smart-stock-live__forecast-label-bg { fill: #c64f12; }
+.smart-stock-live svg .smart-stock-live__forecast-label { fill: #fff; font-weight: 700; }
+.smart-stock-live svg .smart-stock-live__forecast-date { fill: #9a3412; font-weight: 700; }
+.smart-stock-live__legend-dash {
+  display: inline-block;
+  width: 1.15rem;
+  border-top: 2px dashed #c64f12;
+  vertical-align: middle;
+}
+.smart-stock-live__chart-note { margin: 0.25rem 0 0; color: #475569; font-size: 0.78rem; }
 .smart-stock-live__point--actual { fill: #1e4e79; }
 .smart-stock-live__point--forecast { fill: #e46721; stroke: white; stroke-width: 1.5px; }
 .smart-stock-live [hidden] { display: none !important; }
@@ -4685,6 +4697,25 @@ body.login-body {
 }
 
 .smart-stock-live__facts dd { margin: 0; font-size: 1.12rem; font-weight: 700; }
+.smart-stock-live__facts small { display: block; margin-top: 0.2rem; color: #475569; font-size: 0.75rem; }
+.smart-stock-live__order-breakdown {
+  margin-bottom: 0.85rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: 0.55rem;
+}
+.smart-stock-live__order-breakdown h3 { margin: 0 0 0.35rem; font-size: 0.92rem; }
+.smart-stock-live__order-breakdown dl > div { display: flex; justify-content: space-between; gap: 0.6rem; padding: 0.22rem 0; }
+.smart-stock-live__order-breakdown dt { font-size: 0.82rem; font-weight: 500; }
+.smart-stock-live__order-breakdown dd { margin: 0; font-size: 0.85rem; font-weight: 650; white-space: nowrap; }
+.smart-stock-live__order-breakdown .smart-stock-live__order-total {
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-light);
+  color: #153754;
+}
+.smart-stock-live__order-total dt, .smart-stock-live__order-total dd { font-weight: 750; }
+.smart-stock-live__stock-check { margin-top: 0.35rem; color: #92400e; font-size: 0.78rem; }
 .smart-stock-live__method { color: #475569; font-size: 0.8rem; }
 
 @media (max-width: 575.98px) {

@@ -31,9 +31,10 @@ public static class SmartStockDemoCalculator
                 Math.Max(0, (input.ForecastDemand - input.CurrentStock + input.SafetyStock)
                     * 100d / (input.ForecastDemand + input.SafetyStock))));
 
-        var recommendedQuantity = Math.Max(
-            0,
-            input.ForecastDemand + input.SafetyStock - input.CurrentStock);
+        var openingStockShortfall = Math.Max(0, -input.CurrentStock);
+        var uncoveredForecastDemand = Math.Max(0, input.ForecastDemand - Math.Max(0, input.CurrentStock));
+        var safetyStockTopUp = Math.Max(0, input.SafetyStock - Math.Max(0, estimatedRemaining));
+        var recommendedQuantity = openingStockShortfall + uncoveredForecastDemand + safetyStockTopUp;
 
         var priority = riskLevel == "High"
             ? "Urgent"
@@ -41,11 +42,15 @@ public static class SmartStockDemoCalculator
                 ? "Medium"
                 : "Low";
 
-        var explanation = estimatedRemaining < 0
-            ? $"สต็อกต่ำกว่ายอดที่คาด {Math.Abs(estimatedRemaining):N0} หน่วย"
-            : estimatedRemaining < input.SafetyStock
-                ? "หลังขายตามคาด สต็อกจะต่ำกว่ายอดสำรอง"
-                : "สต็อกครอบคลุมยอดที่คาดและยอดสำรอง";
+        var explanation = (openingStockShortfall, uncoveredForecastDemand, safetyStockTopUp) switch
+        {
+            (> 0, 0, 0) => "ชดเชยยอดสต็อกติดลบที่บันทึกไว้ในระบบ",
+            (> 0, _, _) => "ชดเชยยอดสต็อกติดลบ และเติมให้พอกับความต้องการของสัปดาห์",
+            (_, > 0, > 0) => "เติมให้พอกับยอดขายที่คาดและเหลือสต็อกสำรองตามเป้า",
+            (_, > 0, _) => "เติมให้พอกับยอดขายที่คาดในสัปดาห์ที่เลือก",
+            (_, _, > 0) => "สต็อกพอกับยอดขายที่คาด แต่หลังขายจะเหลือสำรองต่ำกว่าเป้า",
+            _ => "สต็อกครอบคลุมยอดขายที่คาด และเหลือสำรองตามเป้า"
+        };
 
         var risk = new SmartStockDemoRiskItem
         {
@@ -73,6 +78,9 @@ public static class SmartStockDemoCalculator
             SafetyStock = input.SafetyStock,
             EstimatedRemainingStock = estimatedRemaining,
             SuggestedQuantity = recommendedQuantity,
+            OpeningStockShortfall = openingStockShortfall,
+            UncoveredForecastDemand = uncoveredForecastDemand,
+            SafetyStockTopUp = safetyStockTopUp,
             Priority = priority,
             RecommendationReason = explanation,
         };

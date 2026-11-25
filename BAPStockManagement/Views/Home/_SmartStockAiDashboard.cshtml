@@ -70,12 +70,12 @@
             </div>
             <div class="chart-legend">
                 <span><i class="legend-dot smart-stock-legend-actual"></i>ยอดขายจริง</span>
-                <span><i class="legend-dot smart-stock-legend-forecast"></i>ยอดขายคาดการณ์</span>
+                <span><i class="smart-stock-live__legend-dash" aria-hidden="true"></i>ยอดที่โมเดลคาดสำหรับ 1 สัปดาห์</span>
             </div>
         </div>
         <dl class="smart-stock-live__totals" aria-live="polite">
             <div><dt>ยอดขายจริง</dt><dd><span data-chart-actual>@(Model.ActualSales?.ToString("N0") ?? "—")</span> <small>@actualText</small></dd></div>
-            <div><dt>พยากรณ์สัปดาห์ @weekText</dt><dd data-chart-forecast>@(Model.ForecastSales?.ToString("N0") ?? "—")</dd></div>
+            <div><dt>จำนวนที่คาดว่าจะขายได้ @weekText</dt><dd data-chart-forecast>@(Model.ForecastSales?.ToString("N0") ?? "—")</dd></div>
         </dl>
         @if (Model.ForecastStatus is string status)
         {
@@ -101,6 +101,9 @@
             <p class="smart-stock-live__notice" data-chart-empty hidden>ยังไม่มีข้อมูลรายสัปดาห์สำหรับกลุ่มนี้</p>
             <svg viewBox="0 0 700 240" role="img" aria-label="กราฟยอดขายจริงและยอดพยากรณ์รายสัปดาห์"></svg>
         </div>
+        <p class="smart-stock-live__chart-note" data-chart-forecast-note hidden>
+            เส้นประเชื่อมยอดขายจริงล่าสุดกับจำนวนที่โมเดลคาดว่าจะขายได้ในสัปดาห์ที่เลือก
+        </p>
     </section>
 
     @if (Model.StockAsOf is DateOnly stockAsOf && Model.Analyses.Count > 0)
@@ -211,10 +214,32 @@
                     </div>
                     <dl class="smart-stock-live__facts">
                         <div><dt>@(Model.StockAsOf is DateOnly stockDate ? $"สต็อก ณ {stockDate:dd/MM/yyyy}" : "สต็อกปัจจุบัน")</dt><dd data-detail="stock"></dd></div>
-                        <div><dt>ยอดขายที่คาด</dt><dd data-detail="demand"></dd></div>
-                        <div><dt>สต็อกสำรอง</dt><dd data-detail="safety"></dd></div>
-                        <div><dt>คงเหลือหลังขาย</dt><dd data-detail="remaining"></dd></div>
+                        <div>
+                            <dt>จำนวนที่คาดว่าจะขายได้</dt><dd data-detail="demand"></dd>
+                            <small>คำนวณจากยอดคาดการณ์ของกลุ่มตามสัดส่วนยอดขายของสินค้านี้</small>
+                        </div>
+                        <div>
+                            <dt>เป้าสต็อกสำรอง</dt><dd data-detail="safety"></dd>
+                            <small>จำนวนที่ต้องการให้เหลือเผื่อยอดขายสูงกว่าคาด</small>
+                        </div>
+                        <div>
+                            <dt>คาดว่าจะเหลือหากไม่สั่งเพิ่ม</dt><dd data-detail="remaining"></dd>
+                            <small>สต็อกหักยอดขายที่คาด ค่าติดลบคือจำนวนที่ขาด</small>
+                        </div>
                     </dl>
+                    <section class="smart-stock-live__order-breakdown" data-order-breakdown hidden
+                             aria-labelledby="smartStockOrderBreakdownTitle">
+                        <h3 id="smartStockOrderBreakdownTitle">ที่มาของจำนวนแนะนำสั่งเพิ่ม</h3>
+                        <dl class="mb-0">
+                            <div><dt>ชดเชยยอดสต็อกติดลบ</dt><dd data-detail="stockShortfall"></dd></div>
+                            <div><dt>รองรับยอดขายส่วนที่สต็อกยังไม่พอ</dt><dd data-detail="uncoveredDemand"></dd></div>
+                            <div><dt>เติมให้ถึงเป้าสต็อกสำรอง</dt><dd data-detail="safetyTopUp"></dd></div>
+                            <div class="smart-stock-live__order-total"><dt>รวมแนะนำสั่งเพิ่ม</dt><dd data-detail="orderTotal"></dd></div>
+                        </dl>
+                        <p class="smart-stock-live__stock-check mb-0" data-stock-check hidden>
+                            ยอดสต็อกในระบบติดลบ ควรตรวจนับและกระทบยอดก่อนสั่งซื้อ
+                        </p>
+                    </section>
                     <p class="smart-stock-live__method mb-0">
                         สัปดาห์ @weekText · โมเดล <strong data-detail="model"></strong> ·
                         SKU นี้คิดเป็น <strong data-detail="share"></strong> ของยอดขายกลุ่มในช่วง 12 สัปดาห์

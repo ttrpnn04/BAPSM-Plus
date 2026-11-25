@@ -17,7 +17,14 @@
         .map(item => [String(item.risk.productId), item]));
     const chart = dashboard.querySelector('[data-smart-stock-chart]');
     const svg = chart.querySelector('svg');
+    const forecastNote = dashboard.querySelector('[data-chart-forecast-note]');
     const filters = Array.from(dashboard.querySelectorAll('[data-smart-stock-filter]'));
+
+    function showLatestPoint() {
+        if (!forecastNote.hidden && chart.clientWidth < chart.scrollWidth) {
+            chart.scrollLeft = chart.scrollWidth;
+        }
+    }
 
     function svgElement(tag, attributes, value) {
         const element = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -40,6 +47,8 @@
 
     function renderChart(segment) {
         const points = chartPoints(segment);
+        const forecastIndex = points.findIndex(([, point]) => point.forecast != null);
+        const lastActualIndex = points.findLastIndex(([, point], index) => index < forecastIndex && point.actual != null);
         for (const type of ['actual', 'forecast']) {
             const values = points.map(([, point]) => point[type]).filter(value => value != null);
             dashboard.querySelector('[data-chart-' + type + ']').textContent = values.length
@@ -49,24 +58,35 @@
         svg.replaceChildren();
         svg.toggleAttribute('hidden', points.length === 0);
         chart.querySelector('[data-chart-empty]').hidden = points.length > 0;
+        forecastNote.hidden = forecastIndex < 0;
+        forecastNote.textContent = lastActualIndex >= 0
+            ? 'เส้นประเชื่อมยอดขายจริงล่าสุดกับจำนวนที่โมเดลคาดว่าจะขายได้ในสัปดาห์ที่เลือก'
+            : 'กรอบสีส้มแสดงจำนวนที่โมเดลคาดว่าจะขายได้ในสัปดาห์ที่เลือก';
         if (!points.length) return;
 
         const step = Math.max(1, Math.ceil(Math.max(...points.flatMap(([, point]) =>
             [point.actual ?? 0, point.forecast ?? 0])) / 5));
         const ceiling = step * 5;
-        const x = index => points.length === 1 ? 365 : 54 + index * 620 / (points.length - 1);
-        const y = quantity => 203 - quantity * 178 / ceiling;
+        const x = index => points.length === 1 ? 365 : 54 + index * 600 / (points.length - 1);
+        const y = quantity => 203 - quantity * 164 / ceiling;
         const actualLine = [];
         const marks = [];
+        if (forecastIndex >= 0) {
+            const forecastX = x(forecastIndex);
+            const startX = lastActualIndex < 0 ? forecastX - 35 : (x(lastActualIndex) + forecastX) / 2;
+            svg.append(svgElement('rect', { x: startX, y: 8, width: forecastX + 35 - startX,
+                height: 223, rx: 6, class: 'smart-stock-live__forecast-week' }));
+        }
         for (let index = 0; index <= 5; index++) {
             const tick = index * step;
-            svg.append(svgElement('line', { x1: 54, x2: 674, y1: y(tick), y2: y(tick), class: 'smart-stock-live__grid' }),
+            svg.append(svgElement('line', { x1: 54, x2: 689, y1: y(tick), y2: y(tick), class: 'smart-stock-live__grid' }),
                 svgElement('text', { x: 46, y: y(tick) + 4, 'text-anchor': 'end' }, number.format(tick)));
         }
 
         points.forEach(([week, point], index) => {
             const label = date.format(new Date(week + 'T00:00:00Z'));
-            svg.append(svgElement('text', { x: x(index), y: 223, 'text-anchor': 'middle' }, label));
+            svg.append(svgElement('text', { x: x(index), y: 223, 'text-anchor': 'middle',
+                class: index === forecastIndex ? 'smart-stock-live__forecast-date' : '' }, label));
             if (point.actual != null) actualLine.push(x(index) + ',' + y(point.actual));
 
             for (const [type, caption] of [['actual', 'ยอดจริง'], ['forecast', 'ยอดคาดการณ์']]) {
@@ -78,7 +98,27 @@
                 marks.push(circle);
             }
         });
-        svg.append(svgElement('polyline', { points: actualLine.join(' '), class: 'smart-stock-actual-line', fill: 'none' }), ...marks);
+        svg.append(svgElement('polyline', { points: actualLine.join(' '), class: 'smart-stock-actual-line', fill: 'none' }));
+        if (lastActualIndex >= 0) {
+            svg.append(svgElement('line', {
+                x1: x(lastActualIndex), y1: y(points[lastActualIndex][1].actual),
+                x2: x(forecastIndex), y2: y(points[forecastIndex][1].forecast),
+                class: 'smart-stock-live__forecast-bridge'
+            }));
+        }
+        svg.append(...marks);
+        if (forecastIndex >= 0) {
+            const forecast = points[forecastIndex][1].forecast;
+            const text = 'คาด ' + number.format(forecast);
+            const width = Math.max(56, text.length * 7 + 14);
+            const labelX = Math.min(x(forecastIndex) - width / 2, 697 - width);
+            const labelY = y(forecast) - 30;
+            svg.append(svgElement('rect', { x: labelX, y: labelY, width, height: 21, rx: 5,
+                class: 'smart-stock-live__forecast-label-bg' }),
+                svgElement('text', { x: labelX + width / 2, y: labelY + 14, 'text-anchor': 'middle',
+                    class: 'smart-stock-live__forecast-label' }, text));
+        }
+        showLatestPoint();
     }
 
     for (const filter of filters) {
@@ -93,6 +133,9 @@
         });
     }
     renderChart('all');
+    if ('ResizeObserver' in window) {
+        new ResizeObserver(showLatestPoint).observe(chart);
+    }
 
     const listOpeners = new WeakMap();
     for (const list of dashboard.querySelectorAll('[data-smart-stock-list]')) {
@@ -127,6 +170,8 @@
     const back = detail.querySelector('[data-smart-stock-back]');
     const fields = new Map(Array.from(detail.querySelectorAll('[data-detail]'))
         .map(field => [field.dataset.detail, field]));
+    const breakdown = detail.querySelector('[data-order-breakdown]');
+    const stockCheck = detail.querySelector('[data-stock-check]');
     const levels = { High: 'สูง', Medium: 'ปานกลาง', Low: 'ต่ำ' };
     let origin = null;
     let restoreList = false;
@@ -138,16 +183,29 @@
             identity: item.sku + ' · ' + item.segmentLabel,
             name: risk.productName,
             risk: 'ความเสี่ยง' + levels[risk.riskLevel],
-            action: purchase.suggestedQuantity > 0 ? 'สั่งเพิ่ม ' + quantity(purchase.suggestedQuantity) : 'ยังไม่ต้องสั่งเพิ่ม',
+            action: purchase.suggestedQuantity > 0 ? 'แนะนำสั่งเพิ่ม ' + quantity(purchase.suggestedQuantity) : 'ยังไม่ต้องสั่งเพิ่ม',
             reason: purchase.recommendationReason,
             stock: quantity(risk.currentStock),
             demand: quantity(risk.forecastDemand),
             safety: quantity(risk.safetyStock),
             remaining: quantity(risk.estimatedRemainingStock),
+            orderTotal: quantity(purchase.suggestedQuantity),
             model: item.model,
             share: new Intl.NumberFormat('th-TH', { style: 'percent', maximumFractionDigits: 1 }).format(item.salesShare)
         };
         Object.entries(values).forEach(([key, value]) => { fields.get(key).textContent = value; });
+        const portions = {
+            stockShortfall: purchase.openingStockShortfall,
+            uncoveredDemand: purchase.uncoveredForecastDemand,
+            safetyTopUp: purchase.safetyStockTopUp
+        };
+        Object.entries(portions).forEach(([key, value]) => {
+            const field = fields.get(key);
+            field.textContent = quantity(value);
+            field.parentElement.hidden = value === 0;
+        });
+        breakdown.hidden = purchase.suggestedQuantity <= 0;
+        stockCheck.hidden = purchase.openingStockShortfall <= 0;
         fields.get('risk').className = 'smart-stock-risk smart-stock-risk-' + risk.riskLevel.toLowerCase();
     }
 
