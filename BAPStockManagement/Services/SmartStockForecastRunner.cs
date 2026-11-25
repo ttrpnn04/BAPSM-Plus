@@ -11,6 +11,9 @@ public sealed record SmartStockForecastInput(
 
 public sealed record SmartStockForecast(string Model, double Quantity);
 
+public sealed record SmartStockForecastResult(
+    IReadOnlyDictionary<string, SmartStockForecast> Predictions, string? FailureMessage = null);
+
 public sealed class SmartStockForecastRunner(
     IWebHostEnvironment environment,
     IConfiguration configuration,
@@ -20,7 +23,7 @@ public sealed class SmartStockForecastRunner(
     internal static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly SemaphoreSlim _forecastLock = new(1, 1);
 
-    public async Task<IReadOnlyDictionary<string, SmartStockForecast>> PredictAsync(
+    public async Task<SmartStockForecastResult> PredictAsync(
         SmartStockForecastInput input, CancellationToken cancellationToken)
     {
         var request = JsonSerializer.Serialize(input, JsonOptions);
@@ -29,16 +32,16 @@ public sealed class SmartStockForecastRunner(
         await _forecastLock.WaitAsync(cancellationToken);
         try
         {
-            if (cache.TryGetValue<Dictionary<string, SmartStockForecast>>(key, out var cached) && cached != null)
+            if (cache.TryGetValue<SmartStockForecastResult>(key, out var cached) && cached != null)
             {
                 return cached;
             }
 
-            var predictions = await RunAsync(request, cancellationToken);
-            cache.Set(key, predictions, predictions.Count == input.History.Count
+            var result = await RunAsync(request, cancellationToken);
+            cache.Set(key, result, result.Predictions.Count == input.History.Count
                 ? TimeSpan.FromHours(1)
                 : TimeSpan.FromMinutes(1));
-            return predictions;
+            return result;
         }
         finally
         {
@@ -46,14 +49,18 @@ public sealed class SmartStockForecastRunner(
         }
     }
 
-    private async Task<Dictionary<string, SmartStockForecast>> RunAsync(
+    private async Task<SmartStockForecastResult> RunAsync(
         string request, CancellationToken cancellationToken)
     {
         var script = Path.Combine(environment.ContentRootPath, "Forecasting", "predict.py");
-        var executable = configuration["SmartStockForecast:PythonExecutable"];
+        if (!File.Exists(script))
+        {
+            logger.LogWarning("Smart Stock forecast worker script is missing at {ScriptPath}", script);
+            return Unavailable("เว็บยังไม่มีไฟล์รันโมเดลพยากรณ์");
+        }
         var startInfo = new ProcessStartInfo
         {
-            FileName = string.IsNullOrWhiteSpace(executable) ? "python" : executable,
+            FileName = GetPythonExecutable(),
             UseShellExecute = false,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
@@ -70,8 +77,16 @@ public sealed class SmartStockForecastRunner(
             process.Start();
             var output = process.StandardOutput.ReadToEndAsync(timeout.Token);
             var errors = process.StandardError.ReadToEndAsync(timeout.Token);
-            await process.StandardInput.WriteAsync(request.AsMemory(), timeout.Token);
-            process.StandardInput.Close();
+            IOException? inputError = null;
+            try
+            {
+                await process.StandardInput.WriteAsync(request.AsMemory(), timeout.Token);
+                process.StandardInput.Close();
+            }
+            catch (IOException error)
+            {
+                inputError = error;
+            }
             await process.WaitForExitAsync(timeout.Token);
             var diagnostics = await errors;
             if (process.ExitCode != 0 || !string.IsNullOrWhiteSpace(diagnostics))
@@ -81,25 +96,59 @@ public sealed class SmartStockForecastRunner(
             }
 
             var response = await output;
-            return process.ExitCode == 0
-                ? JsonSerializer.Deserialize<Dictionary<string, SmartStockForecast>>(response, JsonOptions) ?? []
-                : [];
+            if (process.ExitCode != 0)
+            {
+                return Unavailable("Python รันโมเดลไม่สำเร็จ กรุณาตรวจสอบเวอร์ชันและแพ็กเกจบนเครื่องที่รันเว็บ");
+            }
+            if (inputError != null)
+            {
+                throw inputError;
+            }
+
+            return new(JsonSerializer.Deserialize<Dictionary<string, SmartStockForecast>>(response, JsonOptions) ?? []);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             logger.LogWarning("Smart Stock forecast worker timed out");
-            return [];
+            return Unavailable("โมเดลใช้เวลาพยากรณ์เกินกำหนด กรุณาลองอีกครั้ง");
         }
-        catch (Exception error) when (error is Win32Exception or IOException or JsonException)
+        catch (Win32Exception error)
         {
-            logger.LogWarning(error, "Smart Stock forecast worker unavailable");
-            return [];
+            logger.LogWarning(error, "Could not start Smart Stock Python executable {Executable}", startInfo.FileName);
+            return Unavailable("เว็บเปิด Python สำหรับพยากรณ์ไม่ได้ กรุณาตรวจสอบการตั้งค่า Python ของเว็บ");
+        }
+        catch (Exception error) when (error is IOException or JsonException)
+        {
+            logger.LogWarning(error, "Could not read Smart Stock forecast worker output");
+            return Unavailable("เว็บอ่านผลจากโมเดลพยากรณ์ไม่ได้");
         }
         finally
         {
             TryStop(process);
         }
     }
+
+    private string GetPythonExecutable()
+    {
+        var configured = configuration["SmartStockForecast:PythonExecutable"];
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured;
+        }
+
+        var windows = OperatingSystem.IsWindows();
+        var local = windows
+            ? Path.Combine(environment.ContentRootPath, "obj", "forecast-env", "Scripts", "python.exe")
+            : Path.Combine(environment.ContentRootPath, "obj", "forecast-env", "bin", "python");
+        if (File.Exists(local))
+        {
+            return local;
+        }
+        return windows ? "python" : "python3";
+    }
+
+    private static SmartStockForecastResult Unavailable(string message) => new(
+        new Dictionary<string, SmartStockForecast>(), message);
 
     private static void TryStop(Process process)
     {

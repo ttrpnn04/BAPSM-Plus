@@ -4563,6 +4563,22 @@ body.login-body {
 }
 
 /* Smart Stock AI dashboard */
+#smartStockHeading { scroll-margin-top: 4rem; }
+
+.smart-stock-live__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem 1.5rem;
+}
+
+.smart-stock-live__period .form-label { font-size: 0.82rem; font-weight: 650; }
+.smart-stock-live__period-controls { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.smart-stock-live__period-controls input { width: auto; min-width: 10rem; }
+.smart-stock-live__period p { margin-top: 0.35rem; color: var(--text-3); font-size: 0.82rem; }
+.smart-stock-live__notice a { display: inline-block; margin-inline-start: 0.35rem; }
+
 .smart-stock-live__totals {
   display: flex;
   flex-wrap: wrap;

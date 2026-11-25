@@ -57,6 +57,7 @@ public class HomeDashboardViewModel
     public IReadOnlyList<StockAlertItem> OutOfStockItems { get; set; } = [];
 
     public SmartStockDashboardViewModel SmartStock { get; set; } = new();
+    public bool ShowSmartStock { get; set; }
 }
 
 public sealed class SmartStockDemoRiskItem

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using BAPStockManagement.Constants;
 using BAPStockManagement.Models;
@@ -34,16 +35,36 @@ public sealed partial class SmartStockDashboardService(
     };
 
     public async Task<SmartStockDashboardViewModel> GetDashboardDataAsync(
-        IReadOnlyCollection<Product> activeProducts, DateOnly today, CancellationToken cancellationToken)
+        IReadOnlyCollection<Product> activeProducts, DateOnly today, CancellationToken cancellationToken,
+        DateOnly? selectedDate = null)
     {
-        var forecastWeek = StartOfWeek(today);
+        var currentWeek = StartOfWeek(today);
+        var targetDate = selectedDate ?? today;
+        var forecastWeek = StartOfWeek(targetDate);
+        var archive = ReadAsset<ForecastArchive>("verified_history.json");
+        var dataThrough = ReadAsset<ForecastRegistry>("model_registry.json")?.DataThrough ?? archive?.DataThrough;
+        var earliestWeek = dataThrough?.AddDays(7);
+        var period = new SmartStockForecastPeriod(targetDate, forecastWeek, currentWeek.AddDays(6), earliestWeek);
+        if (forecastWeek > currentWeek)
+        {
+            return Empty(activeProducts.Count, period, "เลือกได้ถึงสัปดาห์ปัจจุบัน เมื่อสัปดาห์ก่อนหน้าปิดแล้วจึงจะพยากรณ์สัปดาห์ถัดไปได้");
+        }
+        if (earliestWeek is DateOnly firstForecast && forecastWeek < firstForecast)
+        {
+            return Empty(activeProducts.Count, period,
+                $"เริ่มพยากรณ์ได้ตั้งแต่สัปดาห์ {firstForecast:dd/MM/yyyy} หลังช่วงข้อมูลที่ใช้เตรียมโมเดล");
+        }
+        if (earliestWeek == null && forecastWeek < currentWeek)
+        {
+            return Empty(activeProducts.Count, period, "ยังไม่พบวันสิ้นสุดข้อมูลของโมเดลสำหรับตรวจสอบสัปดาห์ย้อนหลัง");
+        }
         var saleType = await saleBillService.GetPrimarySaleOutTypeIdAsync();
         if (saleType == null)
         {
-            return Empty(activeProducts.Count, forecastWeek, "ยังไม่พบประเภทรายการขาย");
+            return Empty(activeProducts.Count, period, "ยังไม่พบประเภทรายการขาย");
         }
 
-        var historyLimit = forecastWeek.AddDays(-7 * HistoryWeeks);
+        var historyLimit = DateOnly.FromDayNumber(Math.Max(0, forecastWeek.DayNumber - 7 * HistoryWeeks));
         var rows = await context.StockTransactions.AsNoTracking()
             .Where(row => row.TransactionTypeId == saleType && row.TxnDate >= historyLimit &&
                           row.TxnDate < forecastWeek && (row.QtyPieces > 0 || row.QtyCases > 0))
@@ -51,7 +72,7 @@ public sealed partial class SmartStockDashboardService(
             .ToListAsync(cancellationToken);
         if (rows.Count == 0)
         {
-            return Empty(activeProducts.Count, forecastWeek, "ยังไม่มียอดขายจากฐานข้อมูลในสัปดาห์ที่ปิดแล้ว");
+            return Empty(activeProducts.Count, period, "ยังไม่มียอดขายจากฐานข้อมูลก่อนสัปดาห์ที่เลือก");
         }
 
         var firstSale = rows.Min(row => row.Date);
@@ -62,10 +83,9 @@ public sealed partial class SmartStockDashboardService(
         var lastCompleteWeek = forecastWeek.AddDays(-7);
         if (firstCompleteWeek > lastCompleteWeek)
         {
-            return Empty(activeProducts.Count, forecastWeek, "ยังมีข้อมูลขายไม่ครบหนึ่งสัปดาห์");
+            return Empty(activeProducts.Count, period, "ยังมีข้อมูลขายไม่ครบหนึ่งสัปดาห์ก่อนสัปดาห์ที่เลือก");
         }
 
-        var archive = ReadAsset<ForecastArchive>("verified_history.json");
         var skuMap = ReadAsset<SkuMap>("sku_segments.json");
         var catalog = await context.Products.AsNoTracking()
             .Select(product => new CatalogItem(product.ProductId, product.Sku, product.ProductName,
@@ -105,10 +125,16 @@ public sealed partial class SmartStockDashboardService(
             : StartOfWeek(lastSale);
         var actualFrom = allocationStart > firstCompleteWeek ? allocationStart : firstCompleteWeek;
         IReadOnlyDictionary<string, SmartStockForecast> predictions = new Dictionary<string, SmartStockForecast>();
+        DateOnly? suggestedForecastDate = null;
         string? status = null;
         if (actualThrough < lastCompleteWeek)
         {
-            status = "ยังไม่พบยอดขายในสัปดาห์ที่ปิดล่าสุด จึงยังไม่อัปเดตผลพยากรณ์";
+            status = $"ไม่พบรายการขายในสัปดาห์ {lastCompleteWeek:dd/MM} – {lastCompleteWeek.AddDays(6):dd/MM/yyyy} ก่อนสัปดาห์ที่เลือก";
+            var latestForecast = actualThrough.AddDays(7);
+            if (actualThrough >= firstCompleteWeek && earliestWeek is DateOnly firstSupported && latestForecast >= firstSupported)
+            {
+                suggestedForecastDate = latestForecast;
+            }
         }
         else
         {
@@ -120,10 +146,11 @@ public sealed partial class SmartStockDashboardService(
             }
             else
             {
-                predictions = await runner.PredictAsync(history, cancellationToken);
+                var result = await runner.PredictAsync(history, cancellationToken);
+                predictions = result.Predictions;
                 if (predictions.Count == 0)
                 {
-                    status = "ยังไม่มีผลพยากรณ์ ตรวจสอบ Python และไฟล์โมเดลของระบบ";
+                    status = result.FailureMessage ?? "โมเดลยังไม่คืนผลพยากรณ์สำหรับสัปดาห์ที่เลือก";
                 }
                 else if (predictions.Count < SegmentLabels.Count)
                 {
@@ -148,6 +175,10 @@ public sealed partial class SmartStockDashboardService(
 
         var activeById = activeProducts.ToDictionary(product => product.ProductId);
         var analyses = new List<SmartStockAnalysis>();
+        var historical = forecastWeek < currentWeek;
+        var historicalStock = historical && predictions.Count > 0 && recentByProduct.Count > 0
+            ? await GetHistoricalStockAsync(forecastWeek, cancellationToken)
+            : null;
         var safetyStock = Math.Max(0, configuration.GetValue("SmartStockForecast:SafetyStock", SmartStockDemoCalculator.DefaultSafetyStock));
         foreach (var (segment, prediction) in predictions)
         {
@@ -166,9 +197,21 @@ public sealed partial class SmartStockDashboardService(
                 }
 
                 var usesCases = products[product.ProductId].UsesCases;
-                var stock = product.ProductVariants.Where(variant => variant.IsActive).Sum(variant => usesCases
-                    ? variant.StockBalance?.QtyCases ?? 0
-                    : variant.StockBalance?.QtyPieces ?? 0);
+                int stock;
+                if (historical)
+                {
+                    if (historicalStock == null || !historicalStock.TryGetValue(product.ProductId, out var snapshot))
+                    {
+                        continue;
+                    }
+                    stock = usesCases ? snapshot.Cases : snapshot.Pieces;
+                }
+                else
+                {
+                    stock = product.ProductVariants.Where(variant => variant.IsActive).Sum(variant => usesCases
+                        ? variant.StockBalance?.QtyCases ?? 0
+                        : variant.StockBalance?.QtyPieces ?? 0);
+                }
                 var (risk, purchase) = SmartStockDemoCalculator.Analyze(new(
                     product.ProductId, product.ProductName, segment, stock, allocation.Demand,
                     allocation.Demand > 0 ? safetyStock : 0));
@@ -181,14 +224,17 @@ public sealed partial class SmartStockDashboardService(
         {
             predictions.TryGetValue(pair.Key, out var prediction);
             return new SmartStockSegmentSummary(pair.Key, pair.Value,
-                weekly.GetValueOrDefault((actualThrough, pair.Key)), prediction?.Quantity, prediction?.Model);
+                actualThrough >= firstCompleteWeek ? weekly.GetValueOrDefault((actualThrough, pair.Key)) : null,
+                prediction?.Quantity, prediction?.Model);
         }).ToArray();
 
         return new SmartStockDashboardViewModel
         {
-            ForecastWeek = forecastWeek,
+            Period = period,
+            SuggestedForecastDate = suggestedForecastDate,
+            StockAsOf = historical ? forecastWeek.AddDays(-1) : null,
             ActualsFrom = actualFrom <= actualThrough ? actualFrom : null,
-            ActualsThrough = actualThrough,
+            ActualsThrough = actualThrough >= firstCompleteWeek ? actualThrough : null,
             ActualSales = actualFrom <= actualThrough ? salesPoints.Sum(point => point.Actual ?? 0) : null,
             ForecastSales = predictions.Count > 0 ? predictions.Values.Sum(prediction => prediction.Quantity) : null,
             ProductCount = activeProducts.Count,
@@ -199,6 +245,18 @@ public sealed partial class SmartStockDashboardService(
                 .ThenByDescending(item => item.Purchase.SuggestedQuantity)
                 .ThenBy(item => item.Sku, StringComparer.OrdinalIgnoreCase).ToArray()
         };
+    }
+
+    private Task<Dictionary<int, StockSnapshot>> GetHistoricalStockAsync(DateOnly forecastWeek, CancellationToken cancellationToken)
+    {
+        return context.StockTransactions.AsNoTracking()
+            .Where(row => row.TxnDate < forecastWeek && row.Variant.IsActive &&
+                          row.Variant.Product.IsActive && row.Variant.Product.Category.IsActive)
+            .GroupBy(row => row.Variant.ProductId)
+            .Select(group => new StockSnapshot(group.Key,
+                group.Sum(row => row.QtyPieces * row.TransactionType.Direction),
+                group.Sum(row => row.QtyCases * row.TransactionType.Direction)))
+            .ToDictionaryAsync(stock => stock.ProductId, cancellationToken);
     }
 
     private static SmartStockForecastInput BuildForecastInput(ForecastArchive? archive, DateOnly firstCompleteWeek,
@@ -249,10 +307,10 @@ public sealed partial class SmartStockDashboardService(
         return shares.Select((item, index) => (item.ProductId, item.Whole + (index < remainder ? 1 : 0), item.Share));
     }
 
-    private static SmartStockDashboardViewModel Empty(int count, DateOnly forecastWeek, string status) => new()
+    private static SmartStockDashboardViewModel Empty(int count, SmartStockForecastPeriod period, string status) => new()
     {
         ProductCount = count,
-        ForecastWeek = forecastWeek,
+        Period = period,
         ForecastStatus = status,
         Segments = SegmentLabels.Select(pair => new SmartStockSegmentSummary(pair.Key, pair.Value, null, null, null)).ToArray()
     };
@@ -317,7 +375,9 @@ public sealed partial class SmartStockDashboardService(
     private static partial Regex BicycleSize();
 
     private sealed record SaleLine(int ProductId, DateOnly Date, int Pieces, int Cases);
+    private sealed record StockSnapshot(int ProductId, int Pieces, int Cases);
     private sealed record CatalogItem(int Id, string Sku, string Name, string Category, string Unit);
     private sealed record ForecastArchive(DateOnly StartWeek, DateOnly DataThrough, Dictionary<string, double?[]> History);
+    private sealed record ForecastRegistry([property: JsonPropertyName("data_through")] DateOnly? DataThrough);
     private sealed record SkuMap(Dictionary<string, string> Segments);
 }

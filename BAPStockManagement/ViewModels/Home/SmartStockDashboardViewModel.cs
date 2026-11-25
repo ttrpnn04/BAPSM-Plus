@@ -2,7 +2,10 @@ namespace BAPStockManagement.ViewModels.Home;
 
 public sealed class SmartStockDashboardViewModel
 {
-    public DateOnly ForecastWeek { get; init; }
+    public SmartStockForecastPeriod Period { get; init; } = new(default, default, default, null);
+    public DateOnly ForecastWeek => Period.WeekStart;
+    public DateOnly? SuggestedForecastDate { get; init; }
+    public DateOnly? StockAsOf { get; init; }
     public DateOnly? ActualsThrough { get; init; }
     public DateOnly? ActualsFrom { get; init; }
     public long? ActualSales { get; init; }
@@ -12,6 +15,12 @@ public sealed class SmartStockDashboardViewModel
     public IReadOnlyList<SmartStockSalesPoint> WeeklySales { get; init; } = [];
     public IReadOnlyList<SmartStockSegmentSummary> Segments { get; init; } = [];
     public IReadOnlyList<SmartStockAnalysis> Analyses { get; init; } = [];
+}
+
+public sealed record SmartStockForecastPeriod(
+    DateOnly SelectedDate, DateOnly WeekStart, DateOnly LatestSelectableDate, DateOnly? EarliestWeek)
+{
+    public DateOnly WeekEnd => WeekStart.AddDays(Math.Min(6, DateOnly.MaxValue.DayNumber - WeekStart.DayNumber));
 }
 
 public sealed record SmartStockSalesPoint(DateOnly WeekStart, string Segment, long? Actual, double? Forecast);

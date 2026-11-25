@@ -9,7 +9,7 @@
 
 <div id="dashboardSectionCarousel" class="carousel slide dashboard-section-carousel mb-4" data-bs-interval="false" data-bs-touch="false" aria-label="เนื้อหาแดชบอร์ด">
     <div class="carousel-inner">
-        <div class="carousel-item active">
+        <div class="carousel-item @(!Model.ShowSmartStock ? "active" : null)">
             <div class="greeting-bar">
                 <h1>สวัสดี, @name 👋</h1>
                 <p>ยินดีต้อนรับสู่ระบบจัดการสต็อกสินค้า BAP Stock</p>
@@ -171,15 +171,17 @@
             </div>
         </div>
 
-        <div class="carousel-item">
+        <div class="carousel-item @(Model.ShowSmartStock ? "active" : null)">
             @await Html.PartialAsync("_SmartStockAiDashboard", Model.SmartStock)
         </div>
     </div>
 
     <div class="dashboard-section-carousel__navigation d-flex justify-content-center align-items-center">
         <div class="carousel-indicators dashboard-section-carousel__indicators">
-            <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="หน้า 1"></button>
-            <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="1" aria-label="หน้า 2"></button>
+            <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="0"
+                    class="@(!Model.ShowSmartStock ? "active" : null)" aria-current="@(!Model.ShowSmartStock ? "true" : null)" aria-label="หน้า 1"></button>
+            <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="1"
+                    class="@(Model.ShowSmartStock ? "active" : null)" aria-current="@(Model.ShowSmartStock ? "true" : null)" aria-label="หน้า 2"></button>
         </div>
     </div>
 

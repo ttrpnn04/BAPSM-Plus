@@ -2,6 +2,14 @@
     const dashboard = document.querySelector('[data-smart-stock-dashboard]');
     if (!dashboard) return;
 
+    const period = dashboard.querySelector('[data-smart-stock-period]');
+    const forecastDate = period.querySelector('input[type="date"]');
+    forecastDate.addEventListener('change', () => {
+        if (forecastDate.value !== forecastDate.defaultValue && forecastDate.checkValidity()) {
+            period.requestSubmit();
+        }
+    });
+
     const number = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 });
     const date = new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short', timeZone: 'UTC' });
     const series = JSON.parse(dashboard.querySelector('[data-smart-stock-series]').textContent);

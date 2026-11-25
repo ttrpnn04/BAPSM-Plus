@@ -13,7 +13,8 @@
             Empty: "ยังไม่มีคำแนะนำให้สั่งเพิ่ม")
     };
     var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-    var weekText = $"{Model.ForecastWeek:dd/MM} – {Model.ForecastWeek.AddDays(6):dd/MM/yyyy}";
+    var weekText = $"{Model.ForecastWeek:dd/MM} – {Model.Period.WeekEnd:dd/MM/yyyy}";
+    var forecastAction = $"{Url.Action("Index", "Home")}#smartStockHeading";
     var actualText = Model.ActualsFrom is DateOnly from && Model.ActualsThrough is DateOnly through
         ? $"{from:dd/MM} – {through.AddDays(6):dd/MM/yyyy}"
         : "ยังไม่มีข้อมูล";
@@ -30,9 +31,23 @@
 }
 
 <section class="smart-stock-live" data-smart-stock-dashboard aria-labelledby="smartStockHeading">
-    <header class="section-heading mb-3">
-        <h2 id="smartStockHeading">BAPSM+ Smart Stock AI</h2>
-        <p class="mb-0">พยากรณ์ยอดขายรายสัปดาห์จากยอดขายและสต็อกในระบบ</p>
+    <header class="smart-stock-live__heading mb-3">
+        <div class="section-heading">
+            <h2 id="smartStockHeading">BAPSM+ Smart Stock AI</h2>
+            <p class="mb-0">พยากรณ์ยอดขายรายสัปดาห์จากยอดขายและสต็อกในระบบ</p>
+        </div>
+        <form method="get" action="@forecastAction" class="smart-stock-live__period" data-smart-stock-period>
+            <label for="smartStockForecastDate" class="form-label mb-1">วันที่ต้องการพยากรณ์</label>
+            <div class="smart-stock-live__period-controls">
+                <input id="smartStockForecastDate" name="forecastDate" type="date" class="form-control"
+                       value="@Model.Period.SelectedDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)"
+                       min="@Model.Period.EarliestWeek?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)"
+                       max="@Model.Period.LatestSelectableDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)"
+                       aria-describedby="smartStockWeekRange" required />
+                <button type="submit" class="btn btn-primary">ดูผลพยากรณ์</button>
+            </div>
+            <p id="smartStockWeekRange" class="mb-0">สัปดาห์จันทร์–อาทิตย์ @weekText</p>
+        </form>
     </header>
 
     <div class="row g-3 mb-4">
@@ -64,7 +79,15 @@
         </dl>
         @if (Model.ForecastStatus is string status)
         {
-            <p class="smart-stock-live__notice" role="status">@status</p>
+            <div class="smart-stock-live__notice" role="status">
+                @status
+                @if (Model.SuggestedForecastDate is DateOnly suggested)
+                {
+                    <a asp-controller="Home" asp-action="Index"
+                       asp-route-forecastDate="@suggested.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)"
+                       asp-fragment="smartStockHeading">ดูสัปดาห์ @suggested.ToString("dd/MM/yyyy") ถัดจากยอดขายล่าสุด</a>
+                }
+            </div>
         }
         <div class="smart-stock-filter" aria-label="กรองตามกลุ่มสินค้า">
             <button type="button" class="btn btn-sm btn-primary" data-smart-stock-filter="all" aria-pressed="true">ทั้งหมด</button>
@@ -80,6 +103,10 @@
         </div>
     </section>
 
+    @if (Model.StockAsOf is DateOnly stockAsOf && Model.Analyses.Count > 0)
+    {
+        <p class="smart-stock-live__notice mb-2">การวิเคราะห์ย้อนหลังใช้ยอดสต็อกจากประวัติ ณ สิ้นวันที่ @stockAsOf.ToString("dd/MM/yyyy")</p>
+    }
     <div class="row g-3 mb-4">
         @foreach (var panel in panels)
         {
@@ -183,7 +210,7 @@
                         <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>
                     </div>
                     <dl class="smart-stock-live__facts">
-                        <div><dt>สต็อกปัจจุบัน</dt><dd data-detail="stock"></dd></div>
+                        <div><dt>@(Model.StockAsOf is DateOnly stockDate ? $"สต็อก ณ {stockDate:dd/MM/yyyy}" : "สต็อกปัจจุบัน")</dt><dd data-detail="stock"></dd></div>
                         <div><dt>ยอดขายที่คาด</dt><dd data-detail="demand"></dd></div>
                         <div><dt>สต็อกสำรอง</dt><dd data-detail="safety"></dd></div>
                         <div><dt>คงเหลือหลังขาย</dt><dd data-detail="remaining"></dd></div>

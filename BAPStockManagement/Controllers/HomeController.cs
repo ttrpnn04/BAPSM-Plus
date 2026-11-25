@@ -26,7 +26,7 @@ public class HomeController : Controller
         _smartStockDashboardService = smartStockDashboardService;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index([FromQuery] DateOnly? forecastDate = null)
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
         var monthStart = new DateOnly(today.Year, today.Month, 1);
@@ -395,7 +395,8 @@ public class HomeController : Controller
             OutOfStockItems = outOfStockItems,
             SmartStock = await _smartStockDashboardService.GetDashboardDataAsync(products,
                 DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "SE Asia Standard Time")),
-                HttpContext.RequestAborted)
+                HttpContext.RequestAborted, forecastDate),
+            ShowSmartStock = forecastDate.HasValue
         });
     }
 
