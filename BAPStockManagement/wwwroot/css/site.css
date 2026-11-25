@@ -3169,41 +3169,42 @@ code {
   font-weight: 600;
 }
 
-.dashboard-section-carousel__control {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  color: var(--primary);
-  background: transparent;
-  border: 1px solid rgba(18, 35, 63, 0.35);
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(18, 35, 63, 0.12);
-  cursor: pointer;
-  font-size: 1.15rem;
-  transition: color var(--transition), background-color var(--transition), border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+.dashboard-section-carousel .carousel-inner {
+  overflow: hidden;
+  cursor: grab;
+  touch-action: pan-y;
 }
 
-.dashboard-section-carousel__control:hover {
-  color: #fff;
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
-  box-shadow: 0 3px 10px rgba(18, 35, 63, 0.24);
+.dashboard-section-carousel.is-pointer-pressed {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.dashboard-section-carousel__control:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
+.dashboard-section-carousel.is-pointer-dragging .carousel-inner {
+  cursor: grabbing;
+}
+
+#dashboardSectionCarousel .carousel-inner.is-pointer-dragging .carousel-item.dashboard-carousel-drag-current {
+  display: block;
+  position: relative;
+  float: none;
+  width: 100%;
+  margin-right: 0;
+}
+
+#dashboardSectionCarousel .carousel-inner.is-pointer-dragging .carousel-item.dashboard-carousel-drag-neighbor {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  float: none;
+  width: 100%;
+  margin-right: 0;
 }
 
 .dashboard-section-carousel__navigation {
   gap: 1rem;
   margin-top: 0.75rem;
-}
-
-.dashboard-section-carousel__navigation-buttons {
-  gap: 0.5rem;
 }
 
 .dashboard-section-carousel .carousel-indicators {

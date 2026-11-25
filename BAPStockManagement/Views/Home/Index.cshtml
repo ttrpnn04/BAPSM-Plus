@@ -7,7 +7,7 @@
     var maxDailyMovement = Math.Max(Model.DailyMovementChartItems.Select(i => Math.Max(i.InPieces, i.OutPieces)).DefaultIfEmpty(0).Max(), 1);
 }
 
-<div id="dashboardSectionCarousel" class="carousel slide dashboard-section-carousel mb-4" data-bs-interval="false" aria-label="เนื้อหาแดชบอร์ด">
+<div id="dashboardSectionCarousel" class="carousel slide dashboard-section-carousel mb-4" data-bs-interval="false" data-bs-touch="false" aria-label="เนื้อหาแดชบอร์ด">
     <div class="carousel-inner">
         <div class="carousel-item active">
             <div class="greeting-bar">
@@ -129,6 +129,7 @@
                             </div>
                         }
                     </div>
+
                 </div>
 
                 <div class="col-xl-7">
@@ -167,7 +168,6 @@
                         }
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -176,15 +176,7 @@
         </div>
     </div>
 
-    <div class="dashboard-section-carousel__navigation d-flex justify-content-between align-items-center">
-        <div class="dashboard-section-carousel__navigation-buttons d-flex align-items-center">
-            <button class="dashboard-section-carousel__control" type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide="prev" aria-label="ไปหน้าก่อนหน้า" title="ไปหน้าก่อนหน้า">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i>
-            </button>
-            <button class="dashboard-section-carousel__control" type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide="next" aria-label="ไปหน้าถัดไป" title="ไปหน้าถัดไป">
-                <i class="bi bi-arrow-right" aria-hidden="true"></i>
-            </button>
-        </div>
+    <div class="dashboard-section-carousel__navigation d-flex justify-content-center align-items-center">
         <div class="carousel-indicators dashboard-section-carousel__indicators">
             <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="หน้า 1"></button>
             <button type="button" data-bs-target="#dashboardSectionCarousel" data-bs-slide-to="1" aria-label="หน้า 2"></button>
@@ -446,6 +438,201 @@
     </div>
 </div>
 @section Scripts {
+    <script>
+        (function () {
+            var carousel = document.getElementById('dashboardSectionCarousel');
+            var track = carousel && carousel.querySelector('.carousel-inner');
+            if (!carousel || !track || !window.PointerEvent) return;
+
+            var slides = Array.prototype.slice.call(track.querySelectorAll('.carousel-item'));
+            var indicators = Array.prototype.slice.call(carousel.querySelectorAll('.carousel-indicators [data-bs-slide-to]'));
+            var gesture = null;
+            var settling = false;
+            var swipeStartThreshold = 8;
+            var snapDuration = 280;
+
+            function activeSlide() {
+                return slides.find(function (slide) { return slide.classList.contains('active'); });
+            }
+
+            function adjacentSlide(index, direction) {
+                var offset = direction < 0 ? 1 : -1;
+                return slides[(index + offset + slides.length) % slides.length];
+            }
+
+            function clearSlideStyles(slide) {
+                if (!slide) return;
+                slide.classList.remove('dashboard-carousel-drag-current', 'dashboard-carousel-drag-neighbor');
+                slide.style.removeProperty('transform');
+                slide.style.removeProperty('transition');
+            }
+
+            function resetGesture() {
+                if (!gesture) return;
+                window.clearTimeout(gesture.timeout);
+                clearSlideStyles(gesture.active);
+                clearSlideStyles(gesture.neighbor);
+                track.classList.remove('is-pointer-dragging', 'is-pointer-settling');
+                carousel.classList.remove('is-pointer-pressed', 'is-pointer-dragging');
+                gesture = null;
+                settling = false;
+            }
+
+            function updateIndicators(index) {
+                indicators.forEach(function (indicator, indicatorIndex) {
+                    var isActive = indicatorIndex === index;
+                    indicator.classList.toggle('active', isActive);
+                    if (isActive) {
+                        indicator.setAttribute('aria-current', 'true');
+                    } else {
+                        indicator.removeAttribute('aria-current');
+                    }
+                });
+            }
+
+            function setDirection(direction) {
+                var currentIndex = slides.indexOf(gesture.active);
+                if (gesture.neighbor) clearSlideStyles(gesture.neighbor);
+                gesture.direction = direction;
+                gesture.neighbor = adjacentSlide(currentIndex, direction);
+                gesture.neighbor.classList.add('dashboard-carousel-drag-neighbor');
+                gesture.neighbor.style.transition = 'none';
+            }
+
+            function updateDrag(deltaX) {
+                var direction = deltaX < 0 ? -1 : 1;
+                if (direction !== gesture.direction) setDirection(direction);
+
+                gesture.active.style.transform = 'translate3d(' + deltaX + 'px, 0, 0)';
+                var neighborOffset = direction < 0
+                    ? gesture.width + deltaX
+                    : -gesture.width + deltaX;
+                gesture.neighbor.style.transform = 'translate3d(' + neighborOffset + 'px, 0, 0)';
+            }
+
+            function finishGesture(commit) {
+                if (!gesture) return;
+                var completed = gesture;
+                var toIndex = completed.neighbor ? slides.indexOf(completed.neighbor) : slides.indexOf(completed.active);
+
+                if (commit && completed.neighbor) {
+                    completed.active.classList.remove('active');
+                    completed.neighbor.classList.add('active');
+                    updateIndicators(toIndex);
+                }
+
+                resetGesture();
+            }
+
+            function settleGesture(commit) {
+                if (!gesture || !gesture.dragging || !gesture.neighbor) {
+                    resetGesture();
+                    return;
+                }
+
+                settling = true;
+                track.classList.add('is-pointer-settling');
+                gesture.active.style.transition = 'transform ' + snapDuration + 'ms cubic-bezier(0.2, 0.7, 0.2, 1)';
+                gesture.neighbor.style.transition = 'transform ' + snapDuration + 'ms cubic-bezier(0.2, 0.7, 0.2, 1)';
+                void track.offsetWidth;
+
+                if (commit) {
+                    gesture.active.style.transform = 'translate3d(' + (gesture.direction * gesture.width) + 'px, 0, 0)';
+                    gesture.neighbor.style.transform = 'translate3d(0, 0, 0)';
+                } else {
+                    gesture.active.style.transform = 'translate3d(0, 0, 0)';
+                    var initialNeighborOffset = gesture.direction < 0 ? gesture.width : -gesture.width;
+                    gesture.neighbor.style.transform = 'translate3d(' + initialNeighborOffset + 'px, 0, 0)';
+                }
+
+                var currentSlide = gesture.active;
+                var onTransitionEnd = function (event) {
+                    if (event.target !== currentSlide || event.propertyName !== 'transform') return;
+                    currentSlide.removeEventListener('transitionend', onTransitionEnd);
+                    finishGesture(commit);
+                };
+                currentSlide.addEventListener('transitionend', onTransitionEnd);
+                gesture.timeout = window.setTimeout(function () {
+                    currentSlide.removeEventListener('transitionend', onTransitionEnd);
+                    finishGesture(commit);
+                }, snapDuration + 100);
+            }
+
+            function releasePointer(pointerId) {
+                if (carousel.hasPointerCapture && carousel.hasPointerCapture(pointerId)) {
+                    carousel.releasePointerCapture(pointerId);
+                }
+            }
+
+            carousel.addEventListener('pointerdown', function (event) {
+                if (gesture || settling || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+                if (!event.target.closest('.carousel-inner')) return;
+                if (event.target.closest('button, a, input, select, textarea, [role="button"], [data-bs-toggle], [contenteditable="true"], svg, canvas, [title], .daily-chart, .category-bar-list, [data-smart-stock-chart], .stock-prediction-chart')) return;
+                if (track.querySelector('.carousel-item-next, .carousel-item-prev')) return;
+
+                var current = activeSlide();
+                if (!current || slides.length < 2) return;
+
+                gesture = {
+                    pointerId: event.pointerId,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    width: track.clientWidth,
+                    active: current,
+                    neighbor: null,
+                    direction: 0,
+                    dragging: false,
+                    timeout: 0
+                };
+                if (event.pointerType === 'mouse') carousel.classList.add('is-pointer-pressed');
+                carousel.setPointerCapture(event.pointerId);
+            });
+
+            carousel.addEventListener('pointermove', function (event) {
+                if (!gesture || event.pointerId !== gesture.pointerId || settling) return;
+                var deltaX = event.clientX - gesture.startX;
+                var deltaY = event.clientY - gesture.startY;
+
+                if (!gesture.dragging) {
+                    if (Math.abs(deltaX) < swipeStartThreshold && Math.abs(deltaY) < swipeStartThreshold) return;
+                    if (Math.abs(deltaY) >= Math.abs(deltaX)) {
+                        var pointerId = gesture.pointerId;
+                        resetGesture();
+                        releasePointer(pointerId);
+                        return;
+                    }
+
+                    gesture.dragging = true;
+                    track.classList.add('is-pointer-dragging');
+                    gesture.active.classList.add('dashboard-carousel-drag-current');
+                    carousel.classList.add('is-pointer-dragging', 'is-pointer-pressed');
+                }
+
+                event.preventDefault();
+                updateDrag(deltaX);
+            });
+
+            carousel.addEventListener('pointerup', function (event) {
+                if (!gesture || event.pointerId !== gesture.pointerId) return;
+                var pointerId = gesture.pointerId;
+                if (!gesture.dragging) {
+                    resetGesture();
+                    releasePointer(pointerId);
+                    return;
+                }
+
+                var deltaX = event.clientX - gesture.startX;
+                var threshold = Math.max(48, Math.min(120, gesture.width * 0.18));
+                settleGesture(Math.abs(deltaX) >= threshold);
+                releasePointer(pointerId);
+            });
+
+            carousel.addEventListener('pointercancel', function (event) {
+                if (!gesture || event.pointerId !== gesture.pointerId) return;
+                settleGesture(false);
+            });
+        })();
+    </script>
     <script>
         (function () {
             var stockPageItems = document.querySelectorAll('[data-stock-page-item]');
