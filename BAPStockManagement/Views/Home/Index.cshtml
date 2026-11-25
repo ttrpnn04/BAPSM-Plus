@@ -868,6 +868,8 @@
         </div>
     </div>
 </div>
+@await Html.PartialAsync("_SmartRestockItemsModal", Model)
+@await Html.PartialAsync("_SmartRestockAnalysisModal")
 <div class="modal fade" id="stockPredictionModal" tabindex="-1" aria-labelledby="stockPredictionModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
@@ -1101,6 +1103,122 @@
                     : 'ไม่พบประวัติยอดขายในบิลที่เชื่อมกับสต็อกในช่วง 90 วันที่ใช้วิเคราะห์ จึงไม่แสดงค่าคาดการณ์ที่ไม่มีข้อมูลรองรับ.';
                 document.getElementById('predictionModalReason').textContent = reason;
                 document.getElementById('predictionModalRecommendation').textContent = trigger.dataset.recommendation || '';
+            });
+
+            var restockItemsModalElement = document.getElementById('smartRestockItemsModal');
+            var restockAnalysisModalElement = document.getElementById('smartRestockAnalysisModal');
+            var restockItemsModal = bootstrap.Modal.getOrCreateInstance(restockItemsModalElement);
+            var restockAnalysisModal = bootstrap.Modal.getOrCreateInstance(restockAnalysisModalElement);
+            var restockInboundChart = document.getElementById('smartRestockInboundChart');
+            var restockInboundEmpty = document.getElementById('smartRestockInboundEmpty');
+            var shouldReturnToRestockItems = false;
+
+            function renderRestockInboundHistory(history) {
+                restockInboundChart.replaceChildren();
+                var maxQuantity = Math.max.apply(null, [1].concat(history.map(getPointQuantity)));
+                restockInboundChart.appendChild(createSvgElement('line', {
+                    x1: 24,
+                    y1: 151,
+                    x2: 588,
+                    y2: 151,
+                    class: 'stock-prediction-chart__axis'
+                }));
+
+                history.forEach(function (point, index) {
+                    var quantity = getPointQuantity(point);
+                    var x = 28 + index * 18.5;
+                    var height = quantity * 116 / maxQuantity;
+                    restockInboundChart.appendChild(createSvgElement('rect', {
+                        x: x,
+                        y: 150 - height,
+                        width: 11,
+                        height: height,
+                        rx: 2,
+                        class: 'stock-prediction-chart__inbound-bar'
+                    }));
+
+                    if (index % 5 === 0 || index === history.length - 1) {
+                        restockInboundChart.appendChild(createSvgElement('text', {
+                            x: x + 5.5,
+                            y: 174,
+                            'text-anchor': 'middle',
+                            class: 'stock-prediction-chart__label'
+                        }, point.label !== undefined ? point.label : point.Label));
+                    }
+                });
+            }
+
+            document.addEventListener('click', function (event) {
+                var target = event.target;
+                if (!target || !target.closest) return;
+                var trigger = target.closest('[data-smart-restock-analysis]');
+                if (!trigger) return;
+
+                if (restockItemsModalElement.contains(trigger)) {
+                    shouldReturnToRestockItems = true;
+                    restockItemsModalElement.addEventListener('hidden.bs.modal', function openRestockAnalysis() {
+                        restockItemsModalElement.removeEventListener('hidden.bs.modal', openRestockAnalysis);
+                        restockAnalysisModal.show(trigger);
+                    });
+                    restockItemsModal.hide();
+                    return;
+                }
+
+                restockAnalysisModal.show(trigger);
+            });
+
+            restockAnalysisModalElement.addEventListener('hidden.bs.modal', function () {
+                if (shouldReturnToRestockItems) {
+                    shouldReturnToRestockItems = false;
+                    restockItemsModal.show();
+                }
+            });
+
+            restockAnalysisModalElement.addEventListener('show.bs.modal', function (event) {
+                var trigger = event.relatedTarget;
+                if (!trigger) return;
+
+                var stock = Number(trigger.dataset.stock) || 0;
+                var unit = trigger.dataset.unit || '';
+                var average = Number(trigger.dataset.average);
+                var days = Number(trigger.dataset.days);
+                var history = JSON.parse(trigger.dataset.inboundHistory || '[]');
+                var hasInboundHistory = history.some(function (point) {
+                    return getPointQuantity(point) > 0;
+                });
+
+                document.getElementById('smartRestockAnalysisModalTitle').textContent =
+                    trigger.dataset.sku || 'AI Smart Restock Analysis';
+                document.getElementById('smartRestockAnalysisModalSubtitle').textContent =
+                    trigger.dataset.product || '';
+                document.getElementById('smartRestockAnalysisPriority').textContent =
+                    trigger.dataset.priority || '';
+                document.getElementById('smartRestockAnalysisReason').textContent =
+                    trigger.dataset.decisionReason || '';
+                document.getElementById('smartRestockAnalysisStock').textContent =
+                    stock.toLocaleString('th-TH') + ' ' + unit;
+                document.getElementById('smartRestockAnalysisAverage').textContent =
+                    trigger.dataset.average !== ''
+                        ? average.toLocaleString('th-TH', { maximumFractionDigits: 2 }) + ' ' + unit + '/วัน'
+                        : 'ข้อมูลไม่เพียงพอ';
+                document.getElementById('smartRestockAnalysisDays').textContent =
+                    trigger.dataset.days !== '' && Number.isFinite(days)
+                        ? 'ประมาณ ' + Math.ceil(days).toLocaleString('th-TH') + ' วัน' +
+                            (trigger.dataset.date ? ' · ' + trigger.dataset.date : '')
+                        : 'ยังประเมินไม่ได้';
+                document.getElementById('smartRestockAnalysisSalesTrend').textContent =
+                    trigger.dataset.salesTrend || 'ข้อมูลไม่เพียงพอ';
+                document.getElementById('smartRestockAnalysisRisk').textContent =
+                    trigger.dataset.risk || 'ข้อมูลไม่เพียงพอ';
+                document.getElementById('smartRestockAnalysisInboundRecent').textContent =
+                    Number(trigger.dataset.inboundRecent || 0).toLocaleString('th-TH') + ' ' + unit;
+                document.getElementById('smartRestockAnalysisInboundPrevious').textContent =
+                    Number(trigger.dataset.inboundPrevious || 0).toLocaleString('th-TH') + ' ' + unit;
+                document.getElementById('smartRestockAnalysisInboundTrend').textContent =
+                    trigger.dataset.inboundTrend || 'ข้อมูลไม่เพียงพอ';
+                restockInboundChart.hidden = !hasInboundHistory;
+                restockInboundEmpty.hidden = hasInboundHistory;
+                if (hasInboundHistory) renderRestockInboundHistory(history);
             });
         })();
     </script>

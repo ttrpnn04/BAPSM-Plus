@@ -44,6 +44,8 @@ public class HomeDashboardViewModel
 
     public IReadOnlyList<StockPredictionViewModel> StockActionItems { get; set; } = [];
 
+    public IReadOnlyList<SmartRestockItemViewModel> SmartRestockItems { get; set; } = [];
+
     public int StockAnalysisCount { get; set; }
 
     public int CriticalPredictionCount { get; set; }

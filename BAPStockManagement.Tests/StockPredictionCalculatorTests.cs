@@ -114,4 +114,89 @@ public class StockPredictionCalculatorTests
 
         Assert.Equal(expectedRisk, result.RiskLevel);
     }
+
+    [Fact]
+    public void InboundTrendCalculator_IdentifiesIncreasingReceiptsAcrossThirtyDayPeriods()
+    {
+        var result = StockInboundTrendCalculator.Calculate(
+            1,
+            [
+                new StockInboundEntry(Today.AddDays(-10), 8),
+                new StockInboundEntry(Today.AddDays(-45), 3)
+            ],
+            Today);
+
+        Assert.Equal(8, result.Recent30DayQuantity);
+        Assert.Equal(3, result.Previous30DayQuantity);
+        Assert.Equal(StockInboundTrend.Increasing, result.Trend);
+        Assert.Equal(30, result.History.Count);
+    }
+
+    [Fact]
+    public void InboundTrendCalculator_ReportsInsufficientDataWhenBothPeriodsHaveNoReceipts()
+    {
+        var result = StockInboundTrendCalculator.Calculate(
+            1,
+            [new StockInboundEntry(Today.AddDays(-70), 4)],
+            Today);
+
+        Assert.Equal(StockInboundTrend.InsufficientData, result.Trend);
+        Assert.Equal(0, result.Recent30DayQuantity);
+        Assert.Equal(0, result.Previous30DayQuantity);
+    }
+
+    [Fact]
+    public void SmartRestockDecision_PreparesWhenDemandRisesAndReceiptsFall()
+    {
+        var prediction = CreatePrediction(
+            currentStock: 20,
+            riskLevel: StockRiskLevel.Normal,
+            salesTrend: StockSalesTrend.Increasing);
+        var inboundTrend = StockInboundTrendCalculator.Calculate(
+            prediction.ProductId,
+            [new StockInboundEntry(Today.AddDays(-45), 5)],
+            Today);
+
+        var result = SmartRestockDecisionCalculator.Analyze(prediction, inboundTrend);
+
+        Assert.Equal(SmartRestockPriority.Prepare, result.Priority);
+        Assert.Contains("ยอดขายกำลังเพิ่มขึ้น", result.DecisionReason);
+        Assert.Equal("ลดลง", result.InboundTrendLabel);
+    }
+
+    [Fact]
+    public void SmartRestockDecision_UrgentlyFlagsOutOfStockEvenWithoutSalesHistory()
+    {
+        var prediction = StockPredictionCalculator.Calculate(
+            1,
+            "SKU-EMPTY",
+            "Test product",
+            "ชิ้น",
+            0,
+            [],
+            Today);
+        var inboundTrend = StockInboundTrendCalculator.Calculate(1, [], Today);
+
+        var result = SmartRestockDecisionCalculator.Analyze(prediction, inboundTrend);
+
+        Assert.Equal(SmartRestockPriority.Urgent, result.Priority);
+        Assert.Contains("หมดสต็อกแล้ว", result.DecisionReason);
+        Assert.Contains("ประวัติรับเข้าเพียงพอ", result.DecisionReason);
+    }
+
+    private static StockPredictionViewModel CreatePrediction(
+        int currentStock,
+        StockRiskLevel riskLevel,
+        StockSalesTrend salesTrend)
+        => new()
+        {
+            ProductId = 1,
+            Sku = "SKU-1",
+            ProductName = "Test product",
+            Unit = "ชิ้น",
+            CurrentStock = currentStock,
+            RiskLevel = riskLevel,
+            SalesTrend = salesTrend,
+            IsLowStock = false
+        };
 }

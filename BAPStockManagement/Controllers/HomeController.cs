@@ -76,6 +76,14 @@ public class HomeController : Controller
             .ThenBy(prediction => prediction.DaysUntilStockout ?? decimal.MaxValue)
             .ThenBy(prediction => prediction.ProductName)
             .ToList();
+        var inboundTrends = await _stockPredictionService.GetInboundTrendsAsync(products, today);
+        var smartRestockItems = stockPredictions
+            .Select(item => SmartRestockDecisionCalculator.Analyze(item, inboundTrends[item.ProductId]))
+            .Where(item => item.Priority != SmartRestockPriority.Monitor)
+            .OrderBy(item => item.Priority)
+            .ThenBy(item => item.Prediction.DaysUntilStockout ?? decimal.MaxValue)
+            .ThenBy(item => item.Prediction.ProductName)
+            .ToList();
 
         var lowStockItems = productStockRows
             .Where(r => StockThresholds.IsLowStock(r.QtyPieces, r.QtyCases))
@@ -373,6 +381,7 @@ public class HomeController : Controller
             LowStockItems = lowStockItems,
             StockPredictions = stockPredictions,
             StockActionItems = stockActionItems,
+            SmartRestockItems = smartRestockItems,
             StockAnalysisCount = stockPredictions.Count,
             CriticalPredictionCount = stockPredictions.Count(prediction => prediction.RiskLevel == StockRiskLevel.Critical),
             StockoutWithinSevenDaysCount = stockPredictions.Count(prediction =>
