@@ -1247,6 +1247,203 @@ code {
   min-height: 21rem;
 }
 
+.dashboard-insight-card .chart-card__header {
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-usage-table-wrap {
+  overflow-x: auto;
+}
+
+.dashboard-usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.dashboard-usage-table th,
+.dashboard-usage-table td {
+  padding: 0.48rem 0.35rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.dashboard-usage-table th {
+  color: var(--text-3);
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dashboard-usage-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.dashboard-usage-table th:first-child,
+.dashboard-usage-rank {
+  width: 2rem;
+}
+
+.dashboard-usage-table th:nth-child(3) {
+  width: 7rem;
+}
+
+.dashboard-usage-table th:nth-child(4) {
+  width: 8.25rem;
+}
+
+.dashboard-usage-rank {
+  color: var(--text-3);
+  font-weight: 700;
+}
+
+.dashboard-usage-product,
+.dashboard-usage-quantity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dashboard-usage-product strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-usage-product span,
+.dashboard-usage-quantity span {
+  color: var(--text-3);
+  font-size: 0.66rem;
+}
+
+.dashboard-usage-quantity {
+  align-items: flex-end;
+  white-space: nowrap;
+}
+
+.dashboard-usage-quantity strong {
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.dashboard-usage-trend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dashboard-usage-trend svg {
+  width: 3rem;
+  height: 1.65rem;
+  overflow: visible;
+}
+
+.dashboard-usage-trend polyline {
+  fill: none;
+  stroke: #6487D8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.dashboard-usage-trend--up {
+  color: var(--success);
+}
+
+.dashboard-usage-trend--down {
+  color: var(--danger);
+}
+
+.dashboard-usage-trend--steady {
+  color: var(--text-3);
+}
+
+.dashboard-urgent-count {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.dashboard-urgent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dashboard-urgent-product {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1.25fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.55rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--danger-soft) 28%, var(--surface));
+}
+
+.dashboard-urgent-product__icon {
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--danger);
+  font-size: 1rem;
+}
+
+.dashboard-urgent-product__name,
+.dashboard-urgent-product__stock {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dashboard-urgent-product__name strong {
+  color: var(--text-2);
+  font-size: 0.65rem;
+}
+
+.dashboard-urgent-product__name span {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.73rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-urgent-product__stock strong {
+  color: var(--text);
+  font-size: 0.73rem;
+  white-space: nowrap;
+}
+
+.dashboard-urgent-product__stock span {
+  color: var(--danger);
+  font-size: 0.63rem;
+  white-space: nowrap;
+}
+
+.dashboard-urgent-product__badge {
+  padding: 0.25rem 0.45rem;
+  border-radius: 999px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.62rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .dashboard-section-carousel__control {
   display: inline-flex;
   align-items: center;
@@ -1468,6 +1665,21 @@ code {
   .dashboard-section-carousel__control--fixed {
     width: 2.85rem;
     height: 3.5rem;
+  }
+
+  .dashboard-urgent-product {
+    grid-template-columns: 2.1rem minmax(0, 1fr) auto;
+    gap: 0.45rem;
+  }
+
+  .dashboard-urgent-product__stock {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .dashboard-urgent-product__badge {
+    grid-column: 3;
+    grid-row: 1 / span 2;
   }
 
   .stock-distribution {

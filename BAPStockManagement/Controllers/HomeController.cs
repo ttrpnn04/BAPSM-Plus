@@ -42,6 +42,7 @@ public class HomeController : Controller
                     CategoryName = p.Category.CategoryName,
                     Sku = p.Sku,
                     ProductName = p.ProductName,
+                    Unit = ProductUnits.Normalize(p.Unit),
                     VariantCount = activeVariants.Count,
                     QtyPieces = activeVariants.Sum(v => v.StockBalance?.QtyPieces ?? 0),
                     QtyCases = activeVariants.Sum(v => v.StockBalance?.QtyCases ?? 0)
@@ -59,6 +60,7 @@ public class HomeController : Controller
                 CategoryName = r.CategoryName,
                 Sku = r.Sku,
                 ProductName = r.ProductName,
+                Unit = r.Unit,
                 QtyPieces = r.QtyPieces,
                 QtyCases = r.QtyCases
             })
@@ -73,6 +75,7 @@ public class HomeController : Controller
                 CategoryName = r.CategoryName,
                 Sku = r.Sku,
                 ProductName = r.ProductName,
+                Unit = r.Unit,
                 QtyPieces = r.QtyPieces,
                 QtyCases = r.QtyCases
             })
@@ -158,6 +161,105 @@ public class HomeController : Controller
             })
             .ToList();
 
+        var recentUsageStart = today.AddDays(-29);
+        var previousUsageStart = recentUsageStart.AddDays(-30);
+        var productUsageRows = await _context.StockTransactions
+            .AsNoTracking()
+            .Where(t =>
+                t.TxnDate >= previousUsageStart &&
+                t.TxnDate <= today &&
+                t.TransactionType.Direction < 0 &&
+                t.Variant.IsActive &&
+                t.Variant.Product.IsActive &&
+                t.Variant.Product.Category.IsActive)
+            .GroupBy(t => new
+            {
+                t.Variant.ProductId,
+                t.Variant.Product.Sku,
+                t.Variant.Product.ProductName,
+                t.Variant.Product.Unit
+            })
+            .Select(g => new
+            {
+                g.Key.ProductId,
+                g.Key.Sku,
+                g.Key.ProductName,
+                g.Key.Unit,
+                CurrentPieces = g
+                    .Where(t => t.TxnDate >= recentUsageStart)
+                    .Sum(t => (int?)t.QtyPieces) ?? 0,
+                CurrentCases = g
+                    .Where(t => t.TxnDate >= recentUsageStart)
+                    .Sum(t => (int?)t.QtyCases) ?? 0,
+                PreviousPieces = g
+                    .Where(t => t.TxnDate < recentUsageStart)
+                    .Sum(t => (int?)t.QtyPieces) ?? 0,
+                PreviousCases = g
+                    .Where(t => t.TxnDate < recentUsageStart)
+                    .Sum(t => (int?)t.QtyCases) ?? 0
+            })
+            .ToListAsync();
+
+        var topUsageRows = productUsageRows
+            .Select(row => new
+            {
+                Row = row,
+                CurrentQuantity = ProductUnits.IsCaseUnit(row.Unit) ? row.CurrentCases : row.CurrentPieces,
+                PreviousQuantity = ProductUnits.IsCaseUnit(row.Unit) ? row.PreviousCases : row.PreviousPieces
+            })
+            .Where(row => row.CurrentQuantity > 0)
+            .OrderByDescending(row => row.CurrentQuantity)
+            .ThenBy(row => row.Row.ProductName)
+            .Take(5)
+            .ToList();
+        var topProductIds = topUsageRows.Select(row => row.Row.ProductId).ToArray();
+
+        var topProductDailyUsage = await _context.StockTransactions
+            .AsNoTracking()
+            .Where(t =>
+                topProductIds.Contains(t.Variant.ProductId) &&
+                t.TxnDate >= recentUsageStart &&
+                t.TxnDate <= today &&
+                t.TransactionType.Direction < 0 &&
+                t.Variant.IsActive)
+            .GroupBy(t => new { t.Variant.ProductId, t.TxnDate })
+            .Select(g => new
+            {
+                g.Key.ProductId,
+                g.Key.TxnDate,
+                OutPieces = g.Sum(t => (int?)t.QtyPieces) ?? 0,
+                OutCases = g.Sum(t => (int?)t.QtyCases) ?? 0
+            })
+            .ToListAsync();
+
+        var topUsedProducts = topUsageRows
+            .Select(row =>
+            {
+                var trendBuckets = new int[6];
+                foreach (var dailyUsage in topProductDailyUsage.Where(item => item.ProductId == row.Row.ProductId))
+                {
+                    var bucketIndex = Math.Min((dailyUsage.TxnDate.DayNumber - recentUsageStart.DayNumber) / 5, 5);
+                    var quantity = ProductUnits.IsCaseUnit(row.Row.Unit) ? dailyUsage.OutCases : dailyUsage.OutPieces;
+                    trendBuckets[bucketIndex] += quantity;
+                }
+
+                var changePercent = row.PreviousQuantity == 0
+                    ? (decimal?)null
+                    : Math.Round((row.CurrentQuantity - row.PreviousQuantity) * 100m / row.PreviousQuantity);
+
+                return new TopUsedProductItem
+                {
+                    Sku = row.Row.Sku,
+                    ProductName = row.Row.ProductName,
+                    Unit = ProductUnits.Normalize(row.Row.Unit),
+                    UsedQuantity = row.CurrentQuantity,
+                    ChangePercent = changePercent,
+                    HasPreviousPeriodUsage = row.PreviousQuantity > 0,
+                    TrendBuckets = trendBuckets
+                };
+            })
+            .ToList();
+
         var monthTransactions = await _context.StockTransactions
             .AsNoTracking()
             .Include(t => t.TransactionType)
@@ -197,6 +299,7 @@ public class HomeController : Controller
             StockDistributionChartItems = stockDistributionChartItems,
             DailyMovementChartItems = dailyMovementChartItems,
             MonthlyMovementChartItems = monthlyMovementChartItems,
+            TopUsedProducts = topUsedProducts,
             LowStockItems = lowStockItems,
             OutOfStockItems = outOfStockItems
         });

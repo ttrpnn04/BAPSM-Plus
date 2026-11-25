@@ -32,6 +32,8 @@ public class HomeDashboardViewModel
 
     public IReadOnlyList<MonthlyMovementChartItem> MonthlyMovementChartItems { get; set; } = [];
 
+    public IReadOnlyList<TopUsedProductItem> TopUsedProducts { get; set; } = [];
+
     public IReadOnlyList<StockAlertItem> LowStockItems { get; set; } = [];
 
     public IReadOnlyList<StockAlertItem> OutOfStockItems { get; set; } = [];
@@ -70,7 +72,26 @@ public class StockAlertItem
 
     public string ProductName { get; set; } = string.Empty;
 
+    public string Unit { get; set; } = string.Empty;
+
     public int QtyPieces { get; set; }
 
     public int QtyCases { get; set; }
+}
+
+public class TopUsedProductItem
+{
+    public string Sku { get; set; } = string.Empty;
+
+    public string ProductName { get; set; } = string.Empty;
+
+    public string Unit { get; set; } = string.Empty;
+
+    public int UsedQuantity { get; set; }
+
+    public decimal? ChangePercent { get; set; }
+
+    public bool HasPreviousPeriodUsage { get; set; }
+
+    public IReadOnlyList<int> TrendBuckets { get; set; } = [];
 }
